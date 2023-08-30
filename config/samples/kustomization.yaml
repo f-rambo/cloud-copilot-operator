@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- operator.ocean.io_v1alpha1_app.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
