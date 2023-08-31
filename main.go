@@ -20,6 +20,9 @@ import (
 	"flag"
 	"os"
 
+	log "github.com/f-rambo/operatorapp/utils/log"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -38,8 +41,7 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 func init() {
@@ -58,12 +60,25 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	lumberjackLog := &lumberjack.Logger{
+		Filename:   "logs/app-operator.log",
+		MaxSize:    500, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28,   //days
+		Compress:   true, // disabled by default
+		LocalTime:  true,
+	}
 	opts := zap.Options{
 		Development: true,
+		DestWriter:  lumberjackLog,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	logger := log.With(log.NewStdLogger(lumberjackLog), "ts", log.DefaultTimestamp)
+
+	setupLog := log.NewHelper(logger)
+	setupLog.Info("starting app-operator.....")
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
@@ -95,6 +110,7 @@ func main() {
 		Cfg:      mgr.GetConfig(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("app-controller"),
+		Log:      log.NewHelper(logger),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "App")
 		os.Exit(1)

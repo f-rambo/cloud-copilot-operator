@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	l "log"
 	"os"
 
 	fe "emperror.dev/errors"
@@ -17,7 +16,6 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -39,7 +37,7 @@ func (r *AppReconciler) getCliSetting() *cli.EnvSettings {
 }
 
 func (r *AppReconciler) getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) (*repo.Entry, error) {
-	logger := log.FromContext(ctx)
+	logger := r.Log
 	repoEntry := &repo.Entry{
 		Name: app.Spec.RepoName,
 		URL:  app.Spec.RepoURL,
@@ -69,16 +67,19 @@ func (r *AppReconciler) getRepoEntry(ctx context.Context, app *operatoroceaniov1
 }
 
 func (r *AppReconciler) fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) error {
-	logger := log.FromContext(ctx)
+	logger := r.Log
 	repoEntry, err := r.getRepoEntry(ctx, app, secret)
 	if err != nil {
 		return err
 	}
 	settings := r.getCliSetting()
-	if utils.CheckFileIsExist(settings.RepositoryConfig) {
-		logger.Info("Repository file exists")
-	} else {
-		logger.Info("Repository file does not exist, create it")
+	if !utils.CheckFileIsExist(settings.RepositoryCache) {
+		err = utils.CreateDir(settings.RepositoryCache)
+		if err != nil {
+			return err
+		}
+	}
+	if !utils.CheckFileIsExist(settings.RepositoryConfig) {
 		err = utils.CreateFile(settings.RepositoryConfig)
 		if err != nil {
 			return err
@@ -119,7 +120,7 @@ func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alp
 	}
 	settings := r.getCliSetting()
 	actionConfig := new(action.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, l.Printf)
+	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, r.Log.Infof)
 	if err != nil {
 		return err
 	}
@@ -171,7 +172,7 @@ func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alp
 func (r *AppReconciler) deleteApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
 	actionConfig := new(action.Configuration)
 	settings := r.getCliSetting()
-	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, l.Printf)
+	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, r.Log.Infof)
 	if err != nil {
 		return err
 	}

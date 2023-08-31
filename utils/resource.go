@@ -22,3 +22,12 @@ func CreateFile(filename string) error {
 	defer file.Close()
 	return nil
 }
+
+// 创建一个嵌套的目录
+func CreateDir(path string) error {
+	var err = os.MkdirAll(path, 0755)
+	if err != nil {
+		return err
+	}
+	return nil
+}

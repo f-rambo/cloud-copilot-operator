@@ -26,5 +26,7 @@ Dockerfile.cross
 *~
 
 
-repository
+repository/repositories.yaml
+repository/cache/*
 .vscode
+logs

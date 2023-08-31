@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 
+	log "github.com/f-rambo/operatorapp/utils/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +29,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 )
@@ -39,6 +39,7 @@ type AppReconciler struct {
 	Cfg      *rest.Config
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+	Log      *log.Helper
 }
 
 //+kubebuilder:rbac:groups=operator.ocean.io,resources=apps,verbs=get;list;watch;create;update;patch;delete
@@ -55,9 +56,11 @@ type AppReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
+	logger := r.Log
 	logger.Info("Reconciling App")
+	logger.Infof("req: %+v", req)
 	// 获取app资源
+	return ctrl.Result{}, nil
 	app := &operatoroceaniov1alpha1.App{}
 	err := r.Get(ctx, req.NamespacedName, app)
 	if err != nil {
@@ -123,7 +126,7 @@ func (r *AppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *AppReconciler) updateAppStatus(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
-	logger := log.FromContext(ctx)
+	logger := r.Log
 	// 更新app资源状态
 	err := r.Status().Update(ctx, app)
 	if err != nil {
@@ -134,7 +137,7 @@ func (r *AppReconciler) updateAppStatus(ctx context.Context, app *operatoroceani
 }
 
 func (r *AppReconciler) appRefConfigMap(ctx context.Context, app *operatoroceaniov1alpha1.App) (*corev1.ConfigMap, error) {
-	logger := log.FromContext(ctx)
+	logger := r.Log
 	// 获取configmap资源，并关联到app资源
 	configmap := &corev1.ConfigMap{}
 	err := r.Client.Get(ctx, types.NamespacedName{
@@ -159,7 +162,7 @@ func (r *AppReconciler) appRefConfigMap(ctx context.Context, app *operatoroceani
 }
 
 func (r *AppReconciler) appRefSecret(ctx context.Context, app *operatoroceaniov1alpha1.App) (*corev1.Secret, error) {
-	logger := log.FromContext(ctx)
+	logger := r.Log
 	// 获取secret资源，并关联到app资源
 	secret := &corev1.Secret{}
 	err := r.Client.Get(ctx, types.NamespacedName{
