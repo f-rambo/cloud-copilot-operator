@@ -72,6 +72,10 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	if app.Status.Running {
+		logger.Info("App already running")
+		return ctrl.Result{}, nil
+	}
 	appConfigMap, err := r.appRefConfigMap(ctx, app)
 	if err != nil {
 		return ctrl.Result{}, err

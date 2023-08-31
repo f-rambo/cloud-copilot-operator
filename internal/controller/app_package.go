@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	l "log"
 	"os"
 
 	fe "emperror.dev/errors"
@@ -50,7 +51,7 @@ func init() {
 func getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) (*repo.Entry, error) {
 	logger := log.FromContext(ctx)
 	repoEntry := &repo.Entry{
-		Name: app.Spec.ReleaseName,
+		Name: app.Spec.RepoName,
 		URL:  app.Spec.RepoURL,
 	}
 	if secret != nil && secret.Data != nil {
@@ -105,7 +106,7 @@ func fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *co
 	if err != nil {
 		return err
 	}
-	logger.Info("Create the index file in the cache directory %s", fname)
+	logger.Info("Create the index file in the cache directory :" + fname)
 	if os.IsNotExist(fe.Cause(err)) || len(f.Repositories) == 0 {
 		f = repo.NewFile()
 	}
@@ -117,7 +118,7 @@ func fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *co
 }
 
 func deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap *corev1.ConfigMap) error {
-	logger := log.FromContext(ctx)
+	// logger := log.FromContext(ctx)
 	appConfigValues := make(map[string]interface{})
 	if val, ok := configMap.Data["config"]; ok {
 		err := yaml.Unmarshal([]byte(val), &appConfigValues)
@@ -126,7 +127,7 @@ func deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap 
 		}
 	}
 	actionConfig := new(action.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, logger.Info)
+	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, l.Printf)
 	if err != nil {
 		return err
 	}
@@ -176,9 +177,8 @@ func deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap 
 }
 
 func deleteApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
-	logger := log.FromContext(ctx)
 	actionConfig := new(action.Configuration)
-	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, logger.Info)
+	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, l.Printf)
 	if err != nil {
 		return err
 	}
@@ -189,10 +189,15 @@ func deleteApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
 	if err != nil {
 		return err
 	}
+	isInstalled := false
 	for _, v := range resList {
 		if v.Name == app.Spec.ReleaseName {
-			return nil
+			isInstalled = true
+			break
 		}
+	}
+	if !isInstalled {
+		return nil
 	}
 	uninstall := action.NewUninstall(actionConfig)
 	uninstall.KeepHistory = true
