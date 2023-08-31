@@ -144,7 +144,7 @@ func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alp
 	}
 	isInstalled := false
 	for _, v := range resList {
-		if v.Name == app.Spec.ReleaseName {
+		if v.Name == app.Name {
 			isInstalled = true
 			break
 		}
@@ -152,14 +152,12 @@ func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alp
 	// install or upgrade
 	if isInstalled {
 		upgrade := action.NewUpgrade(actionConfig)
-		upgrade.Atomic = true
-		upgrade.Install = true
 		upgrade.Namespace = app.Namespace
-		_, err = upgrade.Run(app.Spec.ReleaseName, chart, appConfigValues)
+		_, err = upgrade.Run(app.Name, chart, appConfigValues)
 		return err
 	}
 	install := action.NewInstall(actionConfig)
-	install.ReleaseName = app.Spec.ReleaseName
+	install.ReleaseName = app.Name
 	install.Namespace = app.Namespace
 	install.CreateNamespace = true
 	_, err = install.Run(chart, appConfigValues)
@@ -169,7 +167,7 @@ func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alp
 	return nil
 }
 
-func (r *AppReconciler) deleteApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
+func (r *AppReconciler) deleteApp(ctx context.Context, appName string) error {
 	actionConfig := new(action.Configuration)
 	settings := r.getCliSetting()
 	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, r.Log.Infof)
@@ -185,7 +183,7 @@ func (r *AppReconciler) deleteApp(ctx context.Context, app *operatoroceaniov1alp
 	}
 	isInstalled := false
 	for _, v := range resList {
-		if v.Name == app.Spec.ReleaseName {
+		if v.Name == appName {
 			isInstalled = true
 			break
 		}
@@ -194,8 +192,6 @@ func (r *AppReconciler) deleteApp(ctx context.Context, app *operatoroceaniov1alp
 		return nil
 	}
 	uninstall := action.NewUninstall(actionConfig)
-	uninstall.KeepHistory = true
-	uninstall.Wait = true
-	_, err = uninstall.Run(app.Spec.ReleaseName)
+	_, err = uninstall.Run(appName)
 	return err
 }

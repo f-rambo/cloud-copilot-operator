@@ -60,60 +60,50 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	logger.Info("Reconciling App")
 	logger.Infof("req: %+v", req)
 	// 获取app资源
-	return ctrl.Result{}, nil
 	app := &operatoroceaniov1alpha1.App{}
 	err := r.Get(ctx, req.NamespacedName, app)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logger.Info("App resource not found. Ignoring since object must be deleted")
-			app.Status.Running = false
-			err = r.updateAppStatus(ctx, app)
+			err = r.deleteApp(ctx, req.Name)
 			if err != nil {
-				r.Recorder.Eventf(app, corev1.EventTypeWarning, "update status", "Failed to update App status: %v", err)
-				return ctrl.Result{}, err
-			}
-			err = r.deleteApp(ctx, app)
-			if err != nil {
+				logger.Error(err, "Failed to delete App")
 				r.Recorder.Eventf(app, corev1.EventTypeWarning, "delete app", "Failed to delete App: %v", err)
 				return ctrl.Result{}, err
 			}
+			logger.Info("app deleted :", req.Name)
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	if app.Status.Running {
-		logger.Info("App already running")
-		return ctrl.Result{}, nil
-	}
 	appConfigMap, err := r.appRefConfigMap(ctx, app)
 	if err != nil {
+		logger.Error(err, "Failed to ref ConfigMap")
 		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref configmap", "Failed to ref ConfigMap: %v", err)
 		return ctrl.Result{}, err
 	}
 	appSecret, err := r.appRefSecret(ctx, app)
 	if err != nil {
+		logger.Error(err, "Failed to ref Secret")
 		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref secret", "Failed to ref Secret: %v", err)
 		return ctrl.Result{}, err
 	}
 	// 获取helm repo资源
 	err = r.fatchRepo(ctx, app, appSecret)
 	if err != nil {
+		logger.Error(err, "Failed to fatch repo")
 		r.Recorder.Eventf(app, corev1.EventTypeWarning, "fatch repo", "Failed to fatch repo: %v", err)
 		return ctrl.Result{}, err
 	}
+	logger.Info("fatchRepo done", app.Name)
 	// 安装helm chart
 	err = r.deployApp(ctx, app, appConfigMap)
 	if err != nil {
+		logger.Error(err, "Failed to deploy App")
 		r.Recorder.Eventf(app, corev1.EventTypeWarning, "deploy app", "Failed to deploy App: %v", err)
 		return ctrl.Result{}, err
 	}
-	// 更新app状态
-	app.Status.Running = true
-	err = r.updateAppStatus(ctx, app)
-	if err != nil {
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "update status", "Failed to update App status: %v", err)
-		return ctrl.Result{}, err
-	}
+	logger.Info("deployApp done", app.Name)
 	return ctrl.Result{}, nil
 }
 
@@ -123,17 +113,6 @@ func (r *AppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&operatoroceaniov1alpha1.App{}).
 		Owns(&corev1.ConfigMap{}).
 		Complete(r)
-}
-
-func (r *AppReconciler) updateAppStatus(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
-	logger := r.Log
-	// 更新app资源状态
-	err := r.Status().Update(ctx, app)
-	if err != nil {
-		logger.Error(err, "Failed to update App status")
-		return err
-	}
-	return nil
 }
 
 func (r *AppReconciler) appRefConfigMap(ctx context.Context, app *operatoroceaniov1alpha1.App) (*corev1.ConfigMap, error) {

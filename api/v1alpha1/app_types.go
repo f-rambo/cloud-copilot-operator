@@ -25,13 +25,12 @@ import (
 
 // AppSpec defines the desired state of App
 type AppSpec struct {
-	ConfigMapName string `json:"configMapName,omitempty"`
-	SecretName    string `json:"secretName,omitempty"`
 	RepoName      string `json:"repoName,omitempty"`
 	RepoURL       string `json:"repoURL,omitempty"`
 	ChartName     string `json:"chartName,omitempty"`
-	ReleaseName   string `json:"releaseName,omitempty"`
 	Version       string `json:"version,omitempty"`
+	ConfigMapName string `json:"configMapName,omitempty"`
+	SecretName    string `json:"secretName,omitempty"`
 }
 
 // AppStatus defines the observed state of App
@@ -41,6 +40,12 @@ type AppStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="repoName",type=string,JSONPath=`.spec.repoName`
+//+kubebuilder:printcolumn:name="repoURL",type=string,JSONPath=`.spec.repoURL`
+//+kubebuilder:printcolumn:name="chartName",type=string,JSONPath=`.spec.chartName`
+//+kubebuilder:printcolumn:name="version",type=string,JSONPath=`.spec.version`
+//+kubebuilder:printcolumn:name="configMapName",type=string,JSONPath=`.spec.configMapName`
+//+kubebuilder:printcolumn:name="secretName",type=string,JSONPath=`.spec.secretName`
 
 // App is the Schema for the apps API
 type App struct {

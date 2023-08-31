@@ -1,0 +1,11 @@
+apiVersion: operator.ocean.io/v1alpha1
+kind: App
+metadata:
+  name: redis
+spec:
+  configMapName: ""
+  secretName: ""
+  repoName: "bitnami"
+  repoURL: "https://charts.bitnami.com/bitnami"
+  chartName: "bitnami/redis"
+  version: "18.0.0"

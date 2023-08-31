@@ -15,7 +15,26 @@ spec:
     singular: app
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.repoName
+      name: repoName
+      type: string
+    - jsonPath: .spec.repoURL
+      name: repoURL
+      type: string
+    - jsonPath: .spec.chartName
+      name: chartName
+      type: string
+    - jsonPath: .spec.version
+      name: version
+      type: string
+    - jsonPath: .spec.configMapName
+      name: configMapName
+      type: string
+    - jsonPath: .spec.secretName
+      name: secretName
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: App is the Schema for the apps API
@@ -38,8 +57,6 @@ spec:
               chartName:
                 type: string
               configMapName:
-                type: string
-              releaseName:
                 type: string
               repoName:
                 type: string
