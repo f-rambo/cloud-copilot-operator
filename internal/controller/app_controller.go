@@ -23,6 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -34,7 +36,9 @@ import (
 // AppReconciler reconciles a App object
 type AppReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Cfg      *rest.Config
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=operator.ocean.io,resources=apps,verbs=get;list;watch;create;update;patch;delete
@@ -62,10 +66,12 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			app.Status.Running = false
 			err = r.updateAppStatus(ctx, app)
 			if err != nil {
+				r.Recorder.Eventf(app, corev1.EventTypeWarning, "update status", "Failed to update App status: %v", err)
 				return ctrl.Result{}, err
 			}
-			err = deleteApp(ctx, app)
+			err = r.deleteApp(ctx, app)
 			if err != nil {
+				r.Recorder.Eventf(app, corev1.EventTypeWarning, "delete app", "Failed to delete App: %v", err)
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
@@ -78,26 +84,31 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	appConfigMap, err := r.appRefConfigMap(ctx, app)
 	if err != nil {
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref configmap", "Failed to ref ConfigMap: %v", err)
 		return ctrl.Result{}, err
 	}
 	appSecret, err := r.appRefSecret(ctx, app)
 	if err != nil {
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref secret", "Failed to ref Secret: %v", err)
 		return ctrl.Result{}, err
 	}
 	// 获取helm repo资源
-	err = fatchRepo(ctx, app, appSecret)
+	err = r.fatchRepo(ctx, app, appSecret)
 	if err != nil {
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "fatch repo", "Failed to fatch repo: %v", err)
 		return ctrl.Result{}, err
 	}
 	// 安装helm chart
-	err = deployApp(ctx, app, appConfigMap)
+	err = r.deployApp(ctx, app, appConfigMap)
 	if err != nil {
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "deploy app", "Failed to deploy App: %v", err)
 		return ctrl.Result{}, err
 	}
 	// 更新app状态
 	app.Status.Running = true
 	err = r.updateAppStatus(ctx, app)
 	if err != nil {
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "update status", "Failed to update App status: %v", err)
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil

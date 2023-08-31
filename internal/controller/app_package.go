@@ -16,7 +16,6 @@ import (
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -27,28 +26,19 @@ const (
 	HelmStorage      = "configmap"
 )
 
-var settings *cli.EnvSettings
-
-func init() {
-	var err error
-	settings = cli.New()
+func (r *AppReconciler) getCliSetting() *cli.EnvSettings {
+	settings := cli.New()
 	settings.KubeConfig = clientcmd.RecommendedHomeFile
 	settings.RepositoryConfig = RepositoryConfig
 	settings.RepositoryCache = RepositoryCache
 	settings.Debug = true
-	cfg, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
-	if err != nil {
-		cfg, err = rest.InClusterConfig()
-		if err != nil {
-			panic(err)
-		}
-	}
-	settings.KubeAPIServer = cfg.Host
-	settings.KubeToken = cfg.BearerToken
-	settings.KubeCaFile = cfg.TLSClientConfig.CAFile
+	settings.KubeAPIServer = r.Cfg.Host
+	settings.KubeToken = r.Cfg.BearerToken
+	settings.KubeCaFile = r.Cfg.TLSClientConfig.CAFile
+	return settings
 }
 
-func getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) (*repo.Entry, error) {
+func (r *AppReconciler) getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) (*repo.Entry, error) {
 	logger := log.FromContext(ctx)
 	repoEntry := &repo.Entry{
 		Name: app.Spec.RepoName,
@@ -78,12 +68,13 @@ func getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret 
 	return repoEntry, nil
 }
 
-func fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) error {
+func (r *AppReconciler) fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) error {
 	logger := log.FromContext(ctx)
-	repoEntry, err := getRepoEntry(ctx, app, secret)
+	repoEntry, err := r.getRepoEntry(ctx, app, secret)
 	if err != nil {
 		return err
 	}
+	settings := r.getCliSetting()
 	if utils.CheckFileIsExist(settings.RepositoryConfig) {
 		logger.Info("Repository file exists")
 	} else {
@@ -117,7 +108,7 @@ func fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *co
 	return f.WriteFile(settings.RepositoryConfig, 0644)
 }
 
-func deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap *corev1.ConfigMap) error {
+func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap *corev1.ConfigMap) error {
 	// logger := log.FromContext(ctx)
 	appConfigValues := make(map[string]interface{})
 	if val, ok := configMap.Data["config"]; ok {
@@ -126,6 +117,7 @@ func deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap 
 			return err
 		}
 	}
+	settings := r.getCliSetting()
 	actionConfig := new(action.Configuration)
 	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, l.Printf)
 	if err != nil {
@@ -176,8 +168,9 @@ func deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap 
 	return nil
 }
 
-func deleteApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
+func (r *AppReconciler) deleteApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
 	actionConfig := new(action.Configuration)
+	settings := r.getCliSetting()
 	err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), HelmStorage, l.Printf)
 	if err != nil {
 		return err
