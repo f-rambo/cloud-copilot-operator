@@ -12,7 +12,7 @@ metadata:
   name: app-viewer-role
 rules:
 - apiGroups:
-  - operator.ocean.io.operator.ocean.io
+  - operator.ocean.io
   resources:
   - apps
   verbs:
@@ -20,7 +20,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - operator.ocean.io.operator.ocean.io
+  - operator.ocean.io
   resources:
   - apps/status
   verbs:

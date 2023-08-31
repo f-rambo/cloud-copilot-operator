@@ -1,4 +1,4 @@
-apiVersion: operator.ocean.io.operator.ocean.io/v1alpha1
+apiVersion: operator.ocean.io/v1alpha1
 kind: App
 metadata:
   labels:

@@ -37,9 +37,9 @@ type AppReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=operator.ocean.io.operator.ocean.io,resources=apps,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.ocean.io.operator.ocean.io,resources=apps/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=operator.ocean.io.operator.ocean.io,resources=apps/finalizers,verbs=update
+//+kubebuilder:rbac:groups=operator.ocean.io,resources=apps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=operator.ocean.io,resources=apps/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=operator.ocean.io,resources=apps/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

@@ -6,7 +6,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - operator.ocean.io.operator.ocean.io
+  - operator.ocean.io
   resources:
   - apps
   verbs:
@@ -18,13 +18,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - operator.ocean.io.operator.ocean.io
+  - operator.ocean.io
   resources:
   - apps/finalizers
   verbs:
   - update
 - apiGroups:
-  - operator.ocean.io.operator.ocean.io
+  - operator.ocean.io
   resources:
   - apps/status
   verbs:
