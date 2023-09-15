@@ -8,7 +8,7 @@ import (
 	fe "emperror.dev/errors"
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 	utils "github.com/f-rambo/operatorapp/utils"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
