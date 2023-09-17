@@ -54,24 +54,58 @@ spec:
           spec:
             description: AppSpec defines the desired state of App
             properties:
-              chartName:
-                type: string
-              configMapName:
-                type: string
-              repoName:
-                type: string
-              repoURL:
-                type: string
-              secretName:
-                type: string
-              version:
-                type: string
+              appChart:
+                properties:
+                  chartName:
+                    type: string
+                  configMapName:
+                    type: string
+                  enable:
+                    type: boolean
+                  repoName:
+                    type: string
+                  repoURL:
+                    type: string
+                  secretName:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - enable
+                type: object
+              service:
+                properties:
+                  configMapName:
+                    type: string
+                  cpu:
+                    type: string
+                  enable:
+                    type: boolean
+                  enable_ingress:
+                    type: boolean
+                  enable_service:
+                    type: boolean
+                  gpa:
+                    type: string
+                  image:
+                    type: string
+                  memory:
+                    type: string
+                  registry:
+                    type: string
+                  replicas:
+                    format: int32
+                    type: integer
+                  version:
+                    type: string
+                required:
+                - enable
+                - enable_service
+                - replicas
+                type: object
             type: object
           status:
             description: AppStatus defines the observed state of App
-            properties:
-              running:
-                type: boolean
             type: object
         type: object
     served: true

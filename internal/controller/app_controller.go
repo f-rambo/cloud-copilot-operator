@@ -20,15 +20,15 @@ import (
 	"context"
 
 	log "github.com/f-rambo/operatorapp/utils/log"
+	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 )
@@ -76,34 +76,14 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	appConfigMap, err := r.appRefConfigMap(ctx, app)
-	if err != nil {
-		logger.Error(err, "Failed to ref ConfigMap")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref configmap", "Failed to ref ConfigMap: %v", err)
+	if app.Spec.AppChart.Enable {
+		err = r.deployAppChart(ctx, app)
 		return ctrl.Result{}, err
 	}
-	appSecret, err := r.appRefSecret(ctx, app)
-	if err != nil {
-		logger.Error(err, "Failed to ref Secret")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref secret", "Failed to ref Secret: %v", err)
+	if app.Spec.Service.Enable {
+		err = r.deployServiceApp(ctx, req, app)
 		return ctrl.Result{}, err
 	}
-	// 获取helm repo资源
-	err = r.fatchRepo(ctx, app, appSecret)
-	if err != nil {
-		logger.Error(err, "Failed to fatch repo")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "fatch repo", "Failed to fatch repo: %v", err)
-		return ctrl.Result{}, err
-	}
-	logger.Info("fatchRepo done", app.Name)
-	// 安装helm chart
-	err = r.deployApp(ctx, app, appConfigMap)
-	if err != nil {
-		logger.Error(err, "Failed to deploy App")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "deploy app", "Failed to deploy App: %v", err)
-		return ctrl.Result{}, err
-	}
-	logger.Info("deployApp done", app.Name)
 	return ctrl.Result{}, nil
 }
 
@@ -112,55 +92,9 @@ func (r *AppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatoroceaniov1alpha1.App{}).
 		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&netv1.Ingress{}).
+		Owns(&appv1.Deployment{}).
 		Complete(r)
-}
-
-func (r *AppReconciler) appRefConfigMap(ctx context.Context, app *operatoroceaniov1alpha1.App) (*corev1.ConfigMap, error) {
-	logger := r.Log
-	// 获取configmap资源，并关联到app资源
-	configmap := &corev1.ConfigMap{}
-	err := r.Client.Get(ctx, types.NamespacedName{
-		Namespace: app.Namespace,
-		Name:      app.Spec.ConfigMapName,
-	}, configmap)
-	if err != nil && !errors.IsNotFound(err) {
-		return configmap, err
-	}
-	if !errors.IsNotFound(err) {
-		logger.Info("ConfigMap already exists")
-		err = controllerutil.SetControllerReference(app, configmap, r.Scheme)
-		if err != nil {
-			return configmap, err
-		}
-		err = r.Update(ctx, configmap)
-		if err != nil {
-			return configmap, err
-		}
-	}
-	return configmap, nil
-}
-
-func (r *AppReconciler) appRefSecret(ctx context.Context, app *operatoroceaniov1alpha1.App) (*corev1.Secret, error) {
-	logger := r.Log
-	// 获取secret资源，并关联到app资源
-	secret := &corev1.Secret{}
-	err := r.Client.Get(ctx, types.NamespacedName{
-		Namespace: app.Namespace,
-		Name:      app.Spec.SecretName,
-	}, secret)
-	if err != nil && !errors.IsNotFound(err) {
-		return secret, err
-	}
-	if !errors.IsNotFound(err) {
-		logger.Info("Secret already exists")
-		err = controllerutil.SetControllerReference(app, secret, r.Scheme)
-		if err != nil {
-			return secret, err
-		}
-		err = r.Update(ctx, secret)
-		if err != nil {
-			return secret, err
-		}
-	}
-	return secret, nil
 }

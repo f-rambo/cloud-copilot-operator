@@ -25,6 +25,12 @@ import (
 
 // AppSpec defines the desired state of App
 type AppSpec struct {
+	AppChart AppChart `json:"appChart,omitempty"`
+	Service  Service  `json:"service,omitempty"`
+}
+
+type AppChart struct {
+	Enable        bool   `json:"enable"`
 	RepoName      string `json:"repoName,omitempty"`
 	RepoURL       string `json:"repoURL,omitempty"`
 	ChartName     string `json:"chartName,omitempty"`
@@ -33,10 +39,23 @@ type AppSpec struct {
 	SecretName    string `json:"secretName,omitempty"`
 }
 
-// AppStatus defines the observed state of App
-type AppStatus struct {
-	Running bool `json:"running,omitempty"`
+type Service struct {
+	Enable        bool    `json:"enable"`
+	EnableIngress bool    `json:"enable_ingress,omitempty"`
+	EnableService bool    `json:"enable_service"`
+	Replicas      int32   `json:"replicas"`
+	Registry      string  `json:"registry,omitempty"`
+	Image         string  `json:"image,omitempty"`
+	Version       string  `json:"version,omitempty"`
+	CPU           string  `json:"cpu,omitempty"`
+	GPU           string  `json:"gpa,omitempty"`
+	Memory        string  `json:"memory,omitempty"`
+	ConfigMapName string  `json:"configMapName,omitempty"`
+	Ports         []int32 `json:"ports,omitempty"`
 }
+
+// AppStatus defines the observed state of App
+type AppStatus struct{}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status

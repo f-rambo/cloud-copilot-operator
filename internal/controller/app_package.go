@@ -18,6 +18,39 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+func (r *AppReconciler) deployAppChart(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
+	logger := r.Log
+	appConfigMap, err := r.appRefConfigMap(ctx, app, app.Spec.AppChart.ConfigMapName)
+	if err != nil {
+		logger.Error(err, "Failed to ref ConfigMap")
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref configmap", "Failed to ref ConfigMap: %v", err)
+		return err
+	}
+	appSecret, err := r.appRefSecret(ctx, app, app.Spec.AppChart.SecretName)
+	if err != nil {
+		logger.Error(err, "Failed to ref Secret")
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref secret", "Failed to ref Secret: %v", err)
+		return err
+	}
+	// 获取helm repo资源
+	err = r.fatchRepo(ctx, app, appSecret)
+	if err != nil {
+		logger.Error(err, "Failed to fatch repo")
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "fatch repo", "Failed to fatch repo: %v", err)
+		return err
+	}
+	logger.Info("fatchRepo done", app.Name)
+	// 安装helm chart
+	err = r.deployApp(ctx, app, appConfigMap)
+	if err != nil {
+		logger.Error(err, "Failed to deploy App")
+		r.Recorder.Eventf(app, corev1.EventTypeWarning, "deploy app", "Failed to deploy App: %v", err)
+		return err
+	}
+	logger.Info("deployAppChart done", app.Name)
+	return nil
+}
+
 const (
 	RepositoryConfig = "repository/repositories.yaml"
 	RepositoryCache  = "repository/cache"
@@ -39,8 +72,8 @@ func (r *AppReconciler) getCliSetting() *cli.EnvSettings {
 func (r *AppReconciler) getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) (*repo.Entry, error) {
 	logger := r.Log
 	repoEntry := &repo.Entry{
-		Name: app.Spec.RepoName,
-		URL:  app.Spec.RepoURL,
+		Name: app.Spec.AppChart.RepoName,
+		URL:  app.Spec.AppChart.RepoURL,
 	}
 	if secret != nil && secret.Data != nil {
 		for k, v := range secret.Data {
@@ -125,9 +158,9 @@ func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alp
 		return err
 	}
 	chartOption := &action.ChartPathOptions{
-		Version: app.Spec.Version,
+		Version: app.Spec.AppChart.Version,
 	}
-	chartPath, err := chartOption.LocateChart(app.Spec.ChartName, settings)
+	chartPath, err := chartOption.LocateChart(app.Spec.AppChart.ChartName, settings)
 	if err != nil {
 		return err
 	}
