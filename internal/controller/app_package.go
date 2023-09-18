@@ -2,52 +2,43 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
 	fe "emperror.dev/errors"
 	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
 	utils "github.com/f-rambo/operatorapp/utils"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func (r *AppReconciler) deployAppChart(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
-	logger := r.Log
-	appConfigMap, err := r.appRefConfigMap(ctx, app, app.Spec.AppChart.ConfigMapName)
+func (r *AppReconciler) deployAppChart(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) (err error) {
+	err = r.configmap(ctx, req, app)
 	if err != nil {
-		logger.Error(err, "Failed to ref ConfigMap")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref configmap", "Failed to ref ConfigMap: %v", err)
 		return err
 	}
-	appSecret, err := r.appRefSecret(ctx, app, app.Spec.AppChart.SecretName)
+	err = r.secret(ctx, req, app)
 	if err != nil {
-		logger.Error(err, "Failed to ref Secret")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "ref secret", "Failed to ref Secret: %v", err)
 		return err
 	}
 	// 获取helm repo资源
-	err = r.fatchRepo(ctx, app, appSecret)
+	err = r.fatchRepo(ctx, app)
 	if err != nil {
-		logger.Error(err, "Failed to fatch repo")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "fatch repo", "Failed to fatch repo: %v", err)
-		return err
+		return errors.WithMessage(err, "Failed to fatch repo")
 	}
-	logger.Info("fatchRepo done", app.Name)
 	// 安装helm chart
-	err = r.deployApp(ctx, app, appConfigMap)
+	err = r.deployApp(ctx, app)
 	if err != nil {
-		logger.Error(err, "Failed to deploy App")
-		r.Recorder.Eventf(app, corev1.EventTypeWarning, "deploy app", "Failed to deploy App: %v", err)
-		return err
+		return errors.WithMessage(err, "Failed to deploy App")
 	}
-	logger.Info("deployAppChart done", app.Name)
 	return nil
 }
 
@@ -69,39 +60,45 @@ func (r *AppReconciler) getCliSetting() *cli.EnvSettings {
 	return settings
 }
 
-func (r *AppReconciler) getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) (*repo.Entry, error) {
+func (r *AppReconciler) getRepoEntry(ctx context.Context, app *operatoroceaniov1alpha1.App) (*repo.Entry, error) {
 	logger := r.Log
 	repoEntry := &repo.Entry{
 		Name: app.Spec.AppChart.RepoName,
 		URL:  app.Spec.AppChart.RepoURL,
 	}
-	if secret != nil && secret.Data != nil {
-		for k, v := range secret.Data {
-			logger.Info("secret", "key", k, "value", string(v))
-			switch k {
-			case "username":
-				repoEntry.Username = string(v)
-			case "password":
-				repoEntry.Password = string(v)
-			case "certFile":
-				repoEntry.CertFile = string(v)
-			case "keyFile":
-				repoEntry.KeyFile = string(v)
-			case "caFile":
-				repoEntry.CAFile = string(v)
-			case "insecureSkipTLSverify":
-				repoEntry.InsecureSkipTLSverify = string(v) == "true"
-			case "passCredentialsAll":
-				repoEntry.PassCredentialsAll = string(v) == "true"
-			}
+	if app.Spec.AppChart.Secret == "" {
+		return repoEntry, nil
+	}
+	secretMap := make(map[string]string)
+	err := json.Unmarshal([]byte(app.Spec.AppChart.Secret), &secretMap)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range secretMap {
+		logger.Info("secret", "key", k, "value", string(v))
+		switch k {
+		case "username":
+			repoEntry.Username = string(v)
+		case "password":
+			repoEntry.Password = string(v)
+		case "certFile":
+			repoEntry.CertFile = string(v)
+		case "keyFile":
+			repoEntry.KeyFile = string(v)
+		case "caFile":
+			repoEntry.CAFile = string(v)
+		case "insecureSkipTLSverify":
+			repoEntry.InsecureSkipTLSverify = string(v) == "true"
+		case "passCredentialsAll":
+			repoEntry.PassCredentialsAll = string(v) == "true"
 		}
 	}
 	return repoEntry, nil
 }
 
-func (r *AppReconciler) fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App, secret *corev1.Secret) error {
+func (r *AppReconciler) fatchRepo(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
 	logger := r.Log
-	repoEntry, err := r.getRepoEntry(ctx, app, secret)
+	repoEntry, err := r.getRepoEntry(ctx, app)
 	if err != nil {
 		return err
 	}
@@ -142,11 +139,11 @@ func (r *AppReconciler) fatchRepo(ctx context.Context, app *operatoroceaniov1alp
 	return f.WriteFile(settings.RepositoryConfig, 0644)
 }
 
-func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App, configMap *corev1.ConfigMap) error {
+func (r *AppReconciler) deployApp(ctx context.Context, app *operatoroceaniov1alpha1.App) error {
 	// logger := log.FromContext(ctx)
 	appConfigValues := make(map[string]interface{})
-	if val, ok := configMap.Data["config"]; ok {
-		err := yaml.Unmarshal([]byte(val), &appConfigValues)
+	if app.Spec.AppChart.Config != "" {
+		err := yaml.Unmarshal([]byte(app.Spec.AppChart.Config), &appConfigValues)
 		if err != nil {
 			return err
 		}

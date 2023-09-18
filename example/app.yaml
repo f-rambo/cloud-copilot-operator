@@ -1,11 +1,28 @@
 apiVersion: operator.ocean.io/v1alpha1
 kind: App
 metadata:
-  name: redis
+  name: nginx
 spec:
-  configMapName: ""
-  secretName: ""
-  repoName: "bitnami"
-  repoURL: "https://charts.bitnami.com/bitnami"
-  chartName: "bitnami/redis"
-  version: "18.0.0"
+  appChart:
+    enable: false
+    config: ""
+    secret: ""
+    repoName: "bitnami"
+    repoURL: "https://charts.bitnami.com/bitnami"
+    chartName: "bitnami/redis"
+    version: "18.0.0"
+  service:
+    enable: true
+    enableIngress: true
+    enableService: true
+    replicas: 1
+    image: "nginx:1.25.2"
+    cpu: "250m"
+    limitCpu: "500m"
+    memory: "64Mi"
+    limitMemory: "128Mi"
+    config: ""
+    secret: ""
+    ports:
+      - ingressPath: "/nginx"
+        containerPort: 80

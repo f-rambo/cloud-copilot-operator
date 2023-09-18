@@ -15,26 +15,7 @@ spec:
     singular: app
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.repoName
-      name: repoName
-      type: string
-    - jsonPath: .spec.repoURL
-      name: repoURL
-      type: string
-    - jsonPath: .spec.chartName
-      name: chartName
-      type: string
-    - jsonPath: .spec.version
-      name: version
-      type: string
-    - jsonPath: .spec.configMapName
-      name: configMapName
-      type: string
-    - jsonPath: .spec.secretName
-      name: secretName
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: App is the Schema for the apps API
@@ -58,7 +39,7 @@ spec:
                 properties:
                   chartName:
                     type: string
-                  configMapName:
+                  config:
                     type: string
                   enable:
                     type: boolean
@@ -66,7 +47,7 @@ spec:
                     type: string
                   repoURL:
                     type: string
-                  secretName:
+                  secret:
                     type: string
                   version:
                     type: string
@@ -75,32 +56,44 @@ spec:
                 type: object
               service:
                 properties:
-                  configMapName:
+                  config:
                     type: string
                   cpu:
                     type: string
                   enable:
                     type: boolean
-                  enable_ingress:
+                  enableIngress:
                     type: boolean
-                  enable_service:
+                  enableService:
                     type: boolean
-                  gpa:
+                  gpu:
                     type: string
                   image:
                     type: string
+                  limitCpu:
+                    type: string
+                  limitMemory:
+                    type: string
                   memory:
                     type: string
-                  registry:
-                    type: string
+                  ports:
+                    items:
+                      properties:
+                        containerPort:
+                          format: int32
+                          type: integer
+                        ingressPath:
+                          type: string
+                      type: object
+                    type: array
                   replicas:
                     format: int32
                     type: integer
-                  version:
+                  secret:
                     type: string
                 required:
                 - enable
-                - enable_service
+                - enableService
                 - replicas
                 type: object
             type: object

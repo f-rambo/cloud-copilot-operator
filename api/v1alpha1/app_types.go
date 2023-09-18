@@ -30,28 +30,34 @@ type AppSpec struct {
 }
 
 type AppChart struct {
-	Enable        bool   `json:"enable"`
-	RepoName      string `json:"repoName,omitempty"`
-	RepoURL       string `json:"repoURL,omitempty"`
-	ChartName     string `json:"chartName,omitempty"`
-	Version       string `json:"version,omitempty"`
-	ConfigMapName string `json:"configMapName,omitempty"`
-	SecretName    string `json:"secretName,omitempty"`
+	Enable    bool   `json:"enable"`
+	RepoName  string `json:"repoName,omitempty"`
+	RepoURL   string `json:"repoURL,omitempty"`
+	ChartName string `json:"chartName,omitempty"`
+	Version   string `json:"version,omitempty"`
+	Config    string `json:"config,omitempty"`
+	Secret    string `json:"secret,omitempty"`
 }
 
 type Service struct {
-	Enable        bool    `json:"enable"`
-	EnableIngress bool    `json:"enable_ingress,omitempty"`
-	EnableService bool    `json:"enable_service"`
-	Replicas      int32   `json:"replicas"`
-	Registry      string  `json:"registry,omitempty"`
-	Image         string  `json:"image,omitempty"`
-	Version       string  `json:"version,omitempty"`
-	CPU           string  `json:"cpu,omitempty"`
-	GPU           string  `json:"gpa,omitempty"`
-	Memory        string  `json:"memory,omitempty"`
-	ConfigMapName string  `json:"configMapName,omitempty"`
-	Ports         []int32 `json:"ports,omitempty"`
+	Enable        bool   `json:"enable"`
+	EnableIngress bool   `json:"enableIngress,omitempty"`
+	EnableService bool   `json:"enableService"`
+	Replicas      int32  `json:"replicas"`
+	Image         string `json:"image,omitempty"`
+	CPU           string `json:"cpu,omitempty"`
+	LimitCPU      string `json:"limitCpu,omitempty"`
+	GPU           string `json:"gpu,omitempty"`
+	Memory        string `json:"memory,omitempty"`
+	LimitMemory   string `json:"limitMemory,omitempty"`
+	Config        string `json:"config,omitempty"`
+	Secret        string `json:"secret,omitempty"`
+	Ports         []Port `json:"ports,omitempty"`
+}
+
+type Port struct {
+	IngressPath   string `json:"ingressPath,omitempty"`
+	ContainerPort int32  `json:"containerPort,omitempty"`
 }
 
 // AppStatus defines the observed state of App
@@ -59,12 +65,6 @@ type AppStatus struct{}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="repoName",type=string,JSONPath=`.spec.repoName`
-//+kubebuilder:printcolumn:name="repoURL",type=string,JSONPath=`.spec.repoURL`
-//+kubebuilder:printcolumn:name="chartName",type=string,JSONPath=`.spec.chartName`
-//+kubebuilder:printcolumn:name="version",type=string,JSONPath=`.spec.version`
-//+kubebuilder:printcolumn:name="configMapName",type=string,JSONPath=`.spec.configMapName`
-//+kubebuilder:printcolumn:name="secretName",type=string,JSONPath=`.spec.secretName`
 
 // App is the Schema for the apps API
 type App struct {

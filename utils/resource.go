@@ -9,7 +9,13 @@ import (
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+)
+
+const (
+	SecretKey = "secret"
+	ConfigKey = "config"
 )
 
 // 判断文件是否存在
@@ -90,4 +96,28 @@ func NewService(app *operatoroceaniov1alpha1.App) (*corev1.Service, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+func NewSecret(app *operatoroceaniov1alpha1.App) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: getMeta(app),
+		StringData: map[string]string{SecretKey: app.Spec.Service.Config},
+	}
+}
+
+func NewConfigMap(app *operatoroceaniov1alpha1.App) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: getMeta(app),
+		Data:       map[string]string{ConfigKey: app.Spec.Service.Config},
+	}
+}
+
+func getMeta(app *operatoroceaniov1alpha1.App) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      app.Name,
+		Namespace: app.Namespace,
+		Labels: map[string]string{
+			"app": app.Name,
+		},
+	}
 }

@@ -15,15 +15,69 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) error {
-	// configmap
-	_, err := r.appRefConfigMap(ctx, app, app.Spec.Service.ConfigMapName)
+func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) (err error) {
+	fs := []func(context.Context, ctrl.Request, *operatoroceaniov1alpha1.App) error{
+		r.configmap,
+		r.secret,
+		r.deployment,
+		r.service,
+		r.ingress,
+	}
+	for _, f := range fs {
+		err = f(ctx, req, app)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *AppReconciler) configmap(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) error {
+	configMap := utils.NewConfigMap(app)
+	err := controllerutil.SetControllerReference(app, configMap, r.Scheme)
 	if err != nil {
 		return err
 	}
-	// Deployment  bind configmap
+	c := &corev1.ConfigMap{}
+	err = r.Get(ctx, req.NamespacedName, c)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if errors.IsNotFound(err) {
+		if err := r.Create(ctx, configMap); err != nil {
+			return err
+		}
+		return nil
+	}
+	return r.Update(ctx, configMap)
+}
+
+func (r *AppReconciler) secret(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) error {
+	secret := utils.NewSecret(app)
+	err := controllerutil.SetControllerReference(app, secret, r.Scheme)
+	if err != nil {
+		return err
+	}
+	s := &corev1.Secret{}
+	err = r.Get(ctx, req.NamespacedName, s)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if errors.IsNotFound(err) {
+		if err := r.Create(ctx, secret); err != nil {
+			return err
+		}
+		return nil
+	}
+	return r.Update(ctx, secret)
+}
+
+func (r *AppReconciler) deployment(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) error {
 	deployment, err := utils.NewDeployment(app)
 	if err != nil {
+		return err
+	}
+	if err := controllerutil.SetControllerReference(app, deployment, r.Scheme); err != nil {
 		return err
 	}
 	//查找同名deployment
@@ -31,7 +85,6 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 	if err := r.Get(ctx, req.NamespacedName, d); err != nil {
 		if errors.IsNotFound(err) {
 			if err := r.Create(ctx, deployment); err != nil {
-				r.Log.Error(err, "create deploy failed")
 				return err
 			}
 		}
@@ -40,7 +93,10 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 			return err
 		}
 	}
-	// service
+	return nil
+}
+
+func (r *AppReconciler) service(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) error {
 	service, err := utils.NewService(app)
 	if err != nil {
 		return err
@@ -53,7 +109,6 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 	if err := r.Get(ctx, types.NamespacedName{Name: app.Name, Namespace: app.Namespace}, s); err != nil {
 		if errors.IsNotFound(err) && app.Spec.Service.EnableService {
 			if err := r.Create(ctx, service); err != nil {
-				r.Log.Error(err, "create service failed")
 				return err
 			}
 		}
@@ -62,15 +117,19 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 		}
 	} else {
 		if app.Spec.Service.EnableService {
-			r.Log.Info("skip update")
+			if err := r.Update(ctx, service); err != nil {
+				return err
+			}
 		} else {
 			if err := r.Delete(ctx, s); err != nil {
 				return err
 			}
-
 		}
 	}
-	// ingress
+	return nil
+}
+
+func (r *AppReconciler) ingress(ctx context.Context, req ctrl.Request, app *operatoroceaniov1alpha1.App) error {
 	ingress, err := utils.NewIngress(app)
 	if err != nil {
 		return err
@@ -82,7 +141,6 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 	if err := r.Get(ctx, types.NamespacedName{Name: app.Name, Namespace: app.Namespace}, i); err != nil {
 		if errors.IsNotFound(err) && app.Spec.Service.EnableIngress {
 			if err := r.Create(ctx, ingress); err != nil {
-				r.Log.Error(err, "create ingress failed")
 				return err
 			}
 		}
@@ -91,7 +149,9 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 		}
 	} else {
 		if app.Spec.Service.EnableIngress {
-			r.Log.Info("skip update")
+			if err := r.Update(ctx, ingress); err != nil {
+				return err
+			}
 		} else {
 			if err := r.Delete(ctx, i); err != nil {
 				return err
@@ -99,57 +159,4 @@ func (r *AppReconciler) deployServiceApp(ctx context.Context, req ctrl.Request, 
 		}
 	}
 	return nil
-}
-
-func (r *AppReconciler) appRefConfigMap(ctx context.Context, app *operatoroceaniov1alpha1.App, configMapName string) (*corev1.ConfigMap, error) {
-	if configMapName == "" {
-		return nil, nil
-	}
-	logger := r.Log
-	// 获取configmap资源，并关联到app资源
-	configmap := &corev1.ConfigMap{}
-	err := r.Client.Get(ctx, types.NamespacedName{
-		Namespace: app.Namespace,
-		Name:      configMapName,
-	}, configmap)
-	if err != nil && !errors.IsNotFound(err) {
-		return configmap, err
-	}
-	if !errors.IsNotFound(err) {
-		logger.Info("ConfigMap already exists")
-		err = controllerutil.SetControllerReference(app, configmap, r.Scheme)
-		if err != nil {
-			return configmap, err
-		}
-		err = r.Update(ctx, configmap)
-		if err != nil {
-			return configmap, err
-		}
-	}
-	return configmap, nil
-}
-
-func (r *AppReconciler) appRefSecret(ctx context.Context, app *operatoroceaniov1alpha1.App, secretName string) (*corev1.Secret, error) {
-	logger := r.Log
-	// 获取secret资源，并关联到app资源
-	secret := &corev1.Secret{}
-	err := r.Client.Get(ctx, types.NamespacedName{
-		Namespace: app.Namespace,
-		Name:      secretName,
-	}, secret)
-	if err != nil && !errors.IsNotFound(err) {
-		return secret, err
-	}
-	if !errors.IsNotFound(err) {
-		logger.Info("Secret already exists")
-		err = controllerutil.SetControllerReference(app, secret, r.Scheme)
-		if err != nil {
-			return secret, err
-		}
-		err = r.Update(ctx, secret)
-		if err != nil {
-			return secret, err
-		}
-	}
-	return secret, nil
 }

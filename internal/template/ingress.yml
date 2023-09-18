@@ -8,11 +8,13 @@ spec:
     - host: {{.ObjectMeta.Name}}
       http:
         paths:
-          - path: /
+          {{- range .Spec.Service.Ports}}
+          - path: {{.IngressPath}}
             pathType: Prefix
             backend:
               service:
-                name: {{.ObjectMeta.Name}}
+                name: {{$.ObjectMeta.Name}}
                 port:
-                  number: 8080
+                  number: {{.ContainerPort}}
+          {{end}}
   ingressClassName: traefik
