@@ -7,8 +7,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/operatorapp/api/v1alpha1"
-	"github.com/f-rambo/operatorapp/utils"
+	operatoroceaniov1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
+	"github.com/f-rambo/sailor/utils"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
