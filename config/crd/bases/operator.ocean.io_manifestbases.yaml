@@ -5,20 +5,19 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
-  name: apps.operator.ocean.io
+  name: manifestbases.operator.ocean.io
 spec:
   group: operator.ocean.io
   names:
-    kind: App
-    listKind: AppList
-    plural: apps
-    singular: app
+    kind: ManifestBase
+    listKind: ManifestBaseList
+    plural: manifestbases
+    singular: manifestbase
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: App is the Schema for the apps API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,28 +31,6 @@ spec:
             type: string
           metadata:
             type: object
-          spec:
-            description: AppSpec defines the desired state of App
-            properties:
-              errLog:
-                type: string
-              log:
-                type: string
-              manifest:
-                type: string
-              namespace:
-                type: string
-              releaseName:
-                type: string
-            type: object
-          status:
-            properties:
-              status:
-                format: int32
-                type: integer
-            type: object
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}

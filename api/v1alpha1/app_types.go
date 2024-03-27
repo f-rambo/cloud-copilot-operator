@@ -1,5 +1,5 @@
 /*
-Copyright 2023 f-rambo.
+Copyright 2024 f-rambo.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,34 +25,11 @@ import (
 
 // AppSpec defines the desired state of App
 type AppSpec struct {
-	AppChart AppChart `json:"appChart,omitempty"`
-	Service  Service  `json:"service,omitempty"`
-}
-
-type AppChart struct {
-	Enable    bool   `json:"enable"`
-	RepoName  string `json:"repoName,omitempty"`
-	RepoURL   string `json:"repoURL,omitempty"`
-	ChartName string `json:"chartName,omitempty"`
-	Version   string `json:"version,omitempty"`
-	Config    string `json:"config,omitempty"`
-	Secret    string `json:"secret,omitempty"`
-}
-
-type Service struct {
-	Enable        bool   `json:"enable"`
-	EnableIngress bool   `json:"enableIngress,omitempty"`
-	EnableService bool   `json:"enableService"`
-	Replicas      int32  `json:"replicas"`
-	Image         string `json:"image,omitempty"`
-	CPU           string `json:"cpu,omitempty"`
-	LimitCPU      string `json:"limitCpu,omitempty"`
-	GPU           string `json:"gpu,omitempty"`
-	Memory        string `json:"memory,omitempty"`
-	LimitMemory   string `json:"limitMemory,omitempty"`
-	Config        string `json:"config,omitempty"`
-	Secret        string `json:"secret,omitempty"`
-	Ports         []Port `json:"ports,omitempty"`
+	Namespace   string `json:"namespace,omitempty"`
+	ReleaseName string `json:"releaseName,omitempty"`
+	Manifest    string `json:"manifest,omitempty"`
+	Log         string `json:"log,omitempty"`
+	ErrLog      string `json:"errLog,omitempty"`
 }
 
 type Port struct {
@@ -61,7 +38,16 @@ type Port struct {
 }
 
 // AppStatus defines the observed state of App
-type AppStatus struct{}
+
+const (
+	StateUnknown = 0
+	StateFailed  = 1
+	StateSuccess = 2
+)
+
+type AppStatus struct {
+	Status int32 `json:"status,omitempty"`
+}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -86,4 +72,14 @@ type AppList struct {
 
 func init() {
 	SchemeBuilder.Register(&App{}, &AppList{})
+}
+
+type ManifestBase struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+}
+
+func (a *App) ClearLog() {
+	a.Spec.Log = ""
+	a.Spec.ErrLog = ""
 }

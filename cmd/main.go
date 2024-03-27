@@ -1,5 +1,5 @@
 /*
-Copyright 2023 f-rambo.
+Copyright 2024 f-rambo.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,8 +61,9 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	// log config
 	lumberjackLog := &lumberjack.Logger{
-		Filename:   "logs/app-operator.log",
+		Filename:   "logs/log.log",
 		MaxSize:    500, // megabytes
 		MaxBackups: 3,
 		MaxAge:     28,   //days
@@ -104,14 +106,16 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	if err = (&controller.AppReconciler{
+	appReconciler := &controller.AppReconciler{
 		Client:   mgr.GetClient(),
 		Cfg:      mgr.GetConfig(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("app-controller"),
 		Log:      log.NewHelper(logger),
-	}).SetupWithManager(mgr); err != nil {
+	}
+	appReconciler.ClientSet = kubernetes.NewForConfigOrDie(appReconciler.Cfg)
+	err = appReconciler.SetupWithManager(mgr)
+	if err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "App")
 		os.Exit(1)
 	}
