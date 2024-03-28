@@ -36,9 +36,16 @@ func (r *AppReconciler) handlerApp(ctx context.Context, app *operatoroceaniov1al
 				return err
 			}
 			if app.Status.Status == operatoroceaniov1alpha1.StateSuccess || app.Status.Status == operatoroceaniov1alpha1.StateFailed {
-				err = r.Update(ctx, app)
+				err := r.Update(ctx, app)
 				if err != nil {
 					return err
+				}
+				callbackfunc := r.getAppCallback(app.Name)
+				if callbackfunc != nil {
+					err = callbackfunc(ctx, app)
+					if err != nil {
+						return err
+					}
 				}
 				return nil
 			}

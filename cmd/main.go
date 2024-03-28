@@ -111,7 +111,7 @@ func main() {
 		Cfg:      mgr.GetConfig(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("app-controller"),
-		Log:      log.NewHelper(logger),
+		Log:      setupLog,
 	}
 	appReconciler.ClientSet = kubernetes.NewForConfigOrDie(appReconciler.Cfg)
 	err = appReconciler.SetupWithManager(mgr)
