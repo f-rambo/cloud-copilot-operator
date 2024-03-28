@@ -41,10 +41,6 @@ spec:
                 type: string
               manifest:
                 type: string
-              namespace:
-                type: string
-              releaseName:
-                type: string
             type: object
           status:
             properties:

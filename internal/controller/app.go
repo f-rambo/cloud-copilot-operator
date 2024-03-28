@@ -58,7 +58,7 @@ func (r *AppReconciler) checkAppPods(ctx context.Context, app *operatoroceaniov1
 		labelSelector := ""
 		switch strings.ToUpper(manifestBase.Kind) {
 		case Deployment:
-			deployment, err := r.ClientSet.AppsV1().Deployments(app.Spec.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
+			deployment, err := r.ClientSet.AppsV1().Deployments(app.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -67,7 +67,7 @@ func (r *AppReconciler) checkAppPods(ctx context.Context, app *operatoroceaniov1
 				podAllready = false
 			}
 		case StatefulSet:
-			statefulSet, err := r.ClientSet.AppsV1().StatefulSets(app.Spec.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
+			statefulSet, err := r.ClientSet.AppsV1().StatefulSets(app.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,7 @@ func (r *AppReconciler) checkAppPods(ctx context.Context, app *operatoroceaniov1
 			}
 			labelSelector = metav1.FormatLabelSelector(statefulSet.Spec.Selector)
 		case DaemonSet:
-			daemonSet, err := r.ClientSet.AppsV1().DaemonSets(app.Spec.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
+			daemonSet, err := r.ClientSet.AppsV1().DaemonSets(app.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -85,7 +85,7 @@ func (r *AppReconciler) checkAppPods(ctx context.Context, app *operatoroceaniov1
 			}
 			labelSelector = metav1.FormatLabelSelector(daemonSet.Spec.Selector)
 		case Job:
-			job, err := r.ClientSet.BatchV1().Jobs(app.Spec.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
+			job, err := r.ClientSet.BatchV1().Jobs(app.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -94,14 +94,14 @@ func (r *AppReconciler) checkAppPods(ctx context.Context, app *operatoroceaniov1
 			}
 			labelSelector = metav1.FormatLabelSelector(job.Spec.Selector)
 		case CronJob:
-			cronJob, err := r.ClientSet.BatchV1().CronJobs(app.Spec.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
+			cronJob, err := r.ClientSet.BatchV1().CronJobs(app.Namespace).Get(ctx, manifestBase.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 			labelSelector = metav1.FormatLabelSelector(cronJob.Spec.JobTemplate.Spec.Selector)
 		default:
 		}
-		podList, err := r.ClientSet.CoreV1().Pods(app.Spec.Namespace).List(ctx, metav1.ListOptions{
+		podList, err := r.ClientSet.CoreV1().Pods(app.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: labelSelector,
 		})
 		if err != nil {

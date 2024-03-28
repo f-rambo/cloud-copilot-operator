@@ -25,11 +25,9 @@ import (
 
 // AppSpec defines the desired state of App
 type AppSpec struct {
-	Namespace   string `json:"namespace,omitempty"`
-	ReleaseName string `json:"releaseName,omitempty"`
-	Manifest    string `json:"manifest,omitempty"`
-	Log         string `json:"log,omitempty"`
-	ErrLog      string `json:"errLog,omitempty"`
+	Manifest string `json:"manifest,omitempty"`
+	Log      string `json:"log,omitempty"`
+	ErrLog   string `json:"errLog,omitempty"`
 }
 
 type Port struct {
