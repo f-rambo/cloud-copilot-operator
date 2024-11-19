@@ -19,7 +19,7 @@ package controller
 import (
 	"context"
 
-	log "github.com/f-rambo/sailor/utils/log"
+	log "github.com/f-rambo/cloud-copilot/operator/utils/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
+	operatoroceaniov1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
 )
 
 // AppReconciler reconciles a App object

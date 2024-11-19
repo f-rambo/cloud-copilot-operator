@@ -3,7 +3,7 @@ package controller
 import (
 	"context"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
+	operatoroceaniov1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
 	cstor "github.com/openebs/api/v3/pkg/apis/cstor/v1"
 	openebsapis "github.com/openebs/api/v3/pkg/apis/openebs.io/v1alpha1"
 	matev1 "k8s.io/apimachinery/pkg/apis/meta/v1"

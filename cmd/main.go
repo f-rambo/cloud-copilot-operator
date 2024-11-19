@@ -20,7 +20,7 @@ import (
 	"flag"
 	"os"
 
-	log "github.com/f-rambo/sailor/utils/log"
+	log "github.com/f-rambo/cloud-copilot/operator/utils/log"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -36,8 +36,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
-	"github.com/f-rambo/sailor/internal/controller"
+	operatoroceaniov1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/operator/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 

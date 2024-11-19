@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/sailor/api/v1alpha1"
+	operatoroceaniov1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

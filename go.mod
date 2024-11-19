@@ -1,4 +1,4 @@
-module github.com/f-rambo/sailor
+module github.com/f-rambo/cloud-copilot/operator
 
 go 1.19
 
