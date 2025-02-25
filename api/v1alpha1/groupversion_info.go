@@ -1,5 +1,5 @@
 /*
-Copyright 2024 f-rambo.
+Copyright 2025.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains API Schema definitions for the operator.ocean.io v1alpha1 API group
+// Package v1alpha1 contains API Schema definitions for the cloud-copilot v1alpha1 API group.
 // +kubebuilder:object:generate=true
-// +groupName=operator.ocean.io
+// +groupName=cloud-copilot.operator.io
 package v1alpha1
 
 import (
@@ -25,10 +25,10 @@ import (
 )
 
 var (
-	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "operator.ocean.io", Version: "v1alpha1"}
+	// GroupVersion is group version used to register these objects.
+	GroupVersion = schema.GroupVersion{Group: "cloud-copilot.operator.io", Version: "v1alpha1"}
 
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 
 	// AddToScheme adds the types in this group-version to the given scheme.

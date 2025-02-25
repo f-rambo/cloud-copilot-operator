@@ -5,7 +5,7 @@ import (
 	"os"
 	"text/template"
 
-	operatoroceaniov1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
@@ -26,7 +26,6 @@ func CheckFileIsExist(filename string) bool {
 	return exist
 }
 
-// 创建一个可读可写的文件
 func CreateFile(filename string) error {
 	var file, err = os.Create(filename)
 	if err != nil {
@@ -36,7 +35,6 @@ func CreateFile(filename string) error {
 	return nil
 }
 
-// 创建一个嵌套的目录
 func CreateDir(path string) error {
 	var err = os.MkdirAll(path, 0755)
 	if err != nil {
@@ -45,22 +43,22 @@ func CreateDir(path string) error {
 	return nil
 }
 
-func parseTemplate(templateName string, app *operatoroceaniov1alpha1.App) ([]byte, error) {
+func parseTemplate(templateName string, cloudService *operatorv1alpha1.CloudService) ([]byte, error) {
 	tmpl, err := template.ParseFiles("internal/template/" + templateName + ".yml")
 	if err != nil {
 		return nil, err
 	}
 	b := new(bytes.Buffer)
-	err = tmpl.Execute(b, app)
+	err = tmpl.Execute(b, cloudService)
 	if err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil
 }
 
-func NewDeployment(app *operatoroceaniov1alpha1.App) (*appv1.Deployment, error) {
+func NewDeployment(cloudService *operatorv1alpha1.CloudService) (*appv1.Deployment, error) {
 	d := &appv1.Deployment{}
-	data, err := parseTemplate("deployment", app)
+	data, err := parseTemplate("deployment", cloudService)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +69,9 @@ func NewDeployment(app *operatoroceaniov1alpha1.App) (*appv1.Deployment, error) 
 	return d, nil
 }
 
-func NewIngress(app *operatoroceaniov1alpha1.App) (*netv1.Ingress, error) {
+func NewIngress(cloudService *operatorv1alpha1.CloudService) (*netv1.Ingress, error) {
 	i := &netv1.Ingress{}
-	data, err := parseTemplate("ingress", app)
+	data, err := parseTemplate("ingress", cloudService)
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +82,9 @@ func NewIngress(app *operatoroceaniov1alpha1.App) (*netv1.Ingress, error) {
 	return i, nil
 }
 
-func NewService(app *operatoroceaniov1alpha1.App) (*corev1.Service, error) {
+func NewService(cloudService *operatorv1alpha1.CloudService) (*corev1.Service, error) {
 	s := &corev1.Service{}
-	data, err := parseTemplate("service", app)
+	data, err := parseTemplate("service", cloudService)
 	if err != nil {
 		return nil, err
 	}

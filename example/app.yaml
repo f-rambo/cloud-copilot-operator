@@ -1,8 +1,0 @@
-apiVersion: operator.ocean.io/v1alpha1
-kind: App
-metadata:
-  name: "example"
-spec:
-  namespace: "default"
-  releaseName: "example"
-  manifest: ""

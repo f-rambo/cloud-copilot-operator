@@ -1,0 +1,18 @@
+apiVersion: cloud-copilot.operator.io/v1alpha1
+kind: CloudService
+metadata:
+  name: "example-cloudservice"
+  namespace: "default"
+spec:
+  name: "web-cloudservice"
+  replicas: 3
+  request_cpu: 1
+  limit_cpu: 2
+  request_memory: 1024
+  limit_memory: 2048
+  storage: 10
+  description: "示例服务"
+  ports:
+    - ingress_path: "/api"
+      protocol: "TCP"
+      container_port: 8080
