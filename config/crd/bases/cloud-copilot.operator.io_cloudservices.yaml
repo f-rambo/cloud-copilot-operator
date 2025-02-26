@@ -39,11 +39,15 @@ spec:
           spec:
             description: CloudServiceSpec defines the desired state of CloudService.
             properties:
-              description:
+              config:
+                type: string
+              config_path:
                 type: string
               id:
                 format: int64
                 type: integer
+              image:
+                type: string
               limit_cpu:
                 format: int32
                 type: integer
@@ -55,8 +59,6 @@ spec:
                 type: integer
               log:
                 type: string
-              name:
-                type: string
               ports:
                 items:
                   properties:
@@ -67,6 +69,8 @@ spec:
                       format: int64
                       type: integer
                     ingress_path:
+                      type: string
+                    name:
                       type: string
                     protocol:
                       type: string
@@ -87,9 +91,24 @@ spec:
               request_memory:
                 format: int32
                 type: integer
-              storage:
-                format: int32
-                type: integer
+              volumes:
+                items:
+                  properties:
+                    id:
+                      format: int64
+                      type: integer
+                    name:
+                      type: string
+                    path:
+                      type: string
+                    service_id:
+                      format: int64
+                      type: integer
+                    storage:
+                      format: int32
+                      type: integer
+                  type: object
+                type: array
             type: object
           status:
             properties:

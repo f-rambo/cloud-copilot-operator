@@ -18,14 +18,15 @@ package controller
 
 import (
 	"context"
+	"slices"
 
+	cloudcopilotv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	cloudcopilotv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
 )
 
 // CloudServiceReconciler reconciles a CloudService object
@@ -33,6 +34,8 @@ type CloudServiceReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+const FinalizerName = "finalizer.cloud-copilot.operator.io"
 
 // +kubebuilder:rbac:groups=cloud-copilot.operator.io,resources=cloudservices,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cloud-copilot.operator.io,resources=cloudservices/status,verbs=get;update;patch
@@ -48,19 +51,173 @@ type CloudServiceReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.2/pkg/reconcile
 func (r *CloudServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-	logger.Info("Reconcile", "req", req)
-	service := &cloudcopilotv1alpha1.CloudService{}
-	err := r.Get(ctx, req.NamespacedName, service)
+	log := log.FromContext(ctx)
+	// Get CR
+	cloudService := &cloudcopilotv1alpha1.CloudService{}
+	err := r.Get(ctx, req.NamespacedName, cloudService)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// uninstall cloud service
+			// CR no longer exists, remove finalizer if it exists
+			log.Info("CloudService deleted, cleaning up resources", "namespace", req.Namespace, "name", req.Name)
+			return r.cleanupResources(ctx, req)
+		}
+		log.Error(err, "Failed to get CloudService")
+		return ctrl.Result{}, err
+	}
+
+	// Add finalizer if it doesn't exist
+	if !slices.Contains(cloudService.Finalizers, FinalizerName) {
+		cloudService.Finalizers = append(cloudService.Finalizers, FinalizerName)
+		if err := r.Update(ctx, cloudService); err != nil {
+			log.Error(err, "Failed to add finalizer")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Handle deletion
+	if cloudService.DeletionTimestamp != nil {
+		return r.handleDeletion(ctx, cloudService, req)
+	}
+
+	// Create or update resources
+	return r.reconcileResources(ctx, cloudService, req)
+}
+
+func (r *CloudServiceReconciler) cleanupResources(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+
+	// Deployment
+	deployment := &appsv1.Deployment{}
+	if err := r.Get(ctx, req.NamespacedName, deployment); err == nil {
+		log.Info("Deleting Deployment", "name", deployment.Name)
+		if err := r.Delete(ctx, deployment); err != nil {
+			log.Error(err, "Failed to delete Deployment")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// StatefulSet
+	statefulSet := &appsv1.StatefulSet{}
+	if err := r.Get(ctx, req.NamespacedName, statefulSet); err == nil {
+		log.Info("Deleting StatefulSet", "name", statefulSet.Name)
+		if err := r.Delete(ctx, statefulSet); err != nil {
+			log.Error(err, "Failed to delete StatefulSet")
+			return ctrl.Result{}, err
+		}
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService, _ ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+	if slices.Contains(cloudService.Finalizers, FinalizerName) {
+		if len(cloudService.Spec.Volumes) == 0 {
+			deployment := NewDeployment(cloudService)
+			if err := r.Delete(ctx, deployment); err != nil && !errors.IsNotFound(err) {
+				log.Error(err, "Failed to delete Deployment")
+				return ctrl.Result{}, err
+			}
+		}
+		if len(cloudService.Spec.Volumes) != 0 {
+			statefulSet := NewStatefulSet(cloudService)
+			if err := r.Delete(ctx, statefulSet); err != nil && !errors.IsNotFound(err) {
+				log.Error(err, "Failed to delete StatefulSet")
+				return ctrl.Result{}, err
+			}
+		}
+
+		configMap := NewConfigMap(cloudService)
+		if err := r.Delete(ctx, configMap); err != nil && !errors.IsNotFound(err) {
+			log.Error(err, "Failed to delete ConfigMap")
+			return ctrl.Result{}, err
+		}
+
+		// Remove Finalizer
+		cloudService.Finalizers = removeString(cloudService.Finalizers, FinalizerName)
+		if err := r.Update(ctx, cloudService); err != nil {
+			log.Error(err, "Failed to remove Finalizer")
+			return ctrl.Result{}, err
+		}
+	}
+	return ctrl.Result{}, nil
+}
+
+func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+
+	if len(cloudService.Spec.Volumes) == 0 {
+		deployment := NewDeployment(cloudService)
+		if err := r.Get(ctx, req.NamespacedName, deployment); err != nil {
+			if errors.IsNotFound(err) {
+				log.Info("Creating Deployment", "name", deployment.Name)
+				err = r.Create(ctx, deployment)
+				if err != nil {
+					log.Error(err, "Failed to create Deployment")
+					return ctrl.Result{}, err
+				}
+			}
 			return ctrl.Result{}, nil
 		}
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		log.Info("Updating Deployment", "name", deployment.Name)
+		err := r.Update(ctx, deployment)
+		if err != nil {
+			log.Error(err, "Failed to update Deployment")
+			return ctrl.Result{}, err
+		}
 	}
-	// install or upgrade cloud service
+
+	if len(cloudService.Spec.Volumes) != 0 {
+		statefulSet := NewStatefulSet(cloudService)
+		if err := r.Get(ctx, req.NamespacedName, statefulSet); err != nil {
+			if errors.IsNotFound(err) {
+				log.Info("Creating StatefulSet", "name", statefulSet.Name)
+				err = r.Create(ctx, statefulSet)
+				if err != nil {
+					log.Error(err, "Failed to create StatefulSet")
+					return ctrl.Result{}, err
+				}
+			}
+			return ctrl.Result{}, nil
+		}
+		log.Info("Updating StatefulSet", "name", statefulSet.Name)
+		err := r.Update(ctx, statefulSet)
+		if err != nil {
+			log.Error(err, "Failed to update StatefulSet")
+			return ctrl.Result{}, err
+		}
+	}
+
+	configMap := NewConfigMap(cloudService)
+	if err := r.Get(ctx, req.NamespacedName, configMap); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("Creating ConfigMap", "name", configMap.Name)
+			if err := r.Create(ctx, configMap); err != nil {
+				log.Error(err, "Failed to create ConfigMap")
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, err
+	} else {
+		log.Info("Updating ConfigMap", "name", configMap.Name)
+		if err := r.Update(ctx, configMap); err != nil {
+			log.Error(err, "Failed to update ConfigMap")
+			return ctrl.Result{}, err
+		}
+	}
+
 	return ctrl.Result{}, nil
+}
+
+func removeString(slice []string, item string) []string {
+	var result []string
+	for _, s := range slice {
+		if s != item {
+			result = append(result, s)
+		}
+	}
+	return result
 }
 
 // SetupWithManager sets up the controller with the Manager.
