@@ -109,6 +109,8 @@ spec:
                     storage:
                       format: int32
                       type: integer
+                    storage_class:
+                      type: string
                   type: object
                 type: array
             type: object

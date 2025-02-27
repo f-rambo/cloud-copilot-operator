@@ -51,11 +51,12 @@ type Port struct {
 }
 
 type Volume struct {
-	Id        int64  `json:"id,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Path      string `json:"path,omitempty"`
-	Storage   int32  `json:"storage,omitempty"`
-	ServiceId int64  `json:"service_id,omitempty"`
+	Id           int64  `json:"id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Path         string `json:"path,omitempty"`
+	Storage      int32  `json:"storage,omitempty"`
+	StorageClass string `json:"storage_class,omitempty"`
+	ServiceId    int64  `json:"service_id,omitempty"`
 }
 
 // CloudServiceStatus defines the observed state of CloudService.

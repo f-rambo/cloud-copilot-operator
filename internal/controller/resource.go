@@ -14,6 +14,8 @@ import (
 
 const MiB = 1024 * 1024 // 1 MiB = 2^20 字节
 
+const GI = 1024 * 1024 * 1024 // 1 Gi = 2^30 字节
+
 func NewDeployment(cloudService *operatorv1alpha1.CloudService) *appv1.Deployment {
 	resourceList := corev1.ResourceList{
 		corev1.ResourceCPU:    *resource.NewQuantity(int64(cloudService.Spec.RequestCPU), resource.DecimalSI),
@@ -121,6 +123,7 @@ func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.Stateful
 		})
 	}
 
+	// config
 	volumeMounts := make([]corev1.VolumeMount, 0)
 	var configfile string
 	for file := range cloudService.Spec.Config {
@@ -132,6 +135,8 @@ func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.Stateful
 		MountPath: cloudService.Spec.ConfigPath,
 		SubPath:   configfile,
 	})
+
+	// storage
 	for _, v := range cloudService.Spec.Volumes {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      v.Name,
@@ -161,6 +166,7 @@ func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.Stateful
 		},
 	}
 
+	// pvc
 	volumeClaimTemplates := make([]corev1.PersistentVolumeClaim, 0)
 	for _, v := range cloudService.Spec.Volumes {
 		volumeClaimTemplates = append(volumeClaimTemplates, corev1.PersistentVolumeClaim{
@@ -168,12 +174,13 @@ func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.Stateful
 				Name: v.Name,
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
+				StorageClassName: &v.StorageClass,
 				AccessModes: []corev1.PersistentVolumeAccessMode{
 					corev1.ReadWriteOnce,
 				},
 				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
-						corev1.ResourceStorage: *resource.NewQuantity(int64(v.Storage), resource.BinarySI),
+						corev1.ResourceStorage: *resource.NewQuantity(int64(v.Storage)*GI, resource.BinarySI),
 					},
 				},
 			},

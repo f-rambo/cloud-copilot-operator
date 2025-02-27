@@ -40,7 +40,7 @@ spec:
 
           server {
               listen       80;
-              server_name  localhost;
+              server_name  nginx;
 
               location / {
                   root   /usr/share/nginx/html;
@@ -57,3 +57,8 @@ spec:
     - ingress_path: "/"
       protocol: "TCP"
       container_port: 80
+  volumes:
+    - name: "nginx-storage"
+      path: "/usr/share/nginx/html"
+      storage: 1
+      storage_class: "standard"
