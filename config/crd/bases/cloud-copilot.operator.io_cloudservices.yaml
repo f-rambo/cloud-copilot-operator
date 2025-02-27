@@ -40,7 +40,9 @@ spec:
             description: CloudServiceSpec defines the desired state of CloudService.
             properties:
               config:
-                type: string
+                additionalProperties:
+                  type: string
+                type: object
               config_path:
                 type: string
               id:

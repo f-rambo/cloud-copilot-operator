@@ -22,6 +22,8 @@ import (
 
 	cloudcopilotv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -107,6 +109,36 @@ func (r *CloudServiceReconciler) cleanupResources(ctx context.Context, req ctrl.
 		}
 	}
 
+	// ConfigMap
+	configMap := &corev1.ConfigMap{}
+	if err := r.Get(ctx, req.NamespacedName, configMap); err == nil {
+		log.Info("Deleting ConfigMap", "name", configMap.Name)
+		if err := r.Delete(ctx, configMap); err != nil {
+			log.Error(err, "Failed to delete ConfigMap")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// Service
+	service := &corev1.Service{}
+	if err := r.Get(ctx, req.NamespacedName, service); err == nil {
+		log.Info("Deleting Service", "name", service.Name)
+		if err := r.Delete(ctx, service); err != nil {
+			log.Error(err, "Failed to delete Service")
+			return ctrl.Result{}, err
+		}
+	}
+
+	// Ingress
+	ingress := &netv1.Ingress{}
+	if err := r.Get(ctx, req.NamespacedName, ingress); err == nil {
+		log.Info("Deleting Ingress", "name", ingress.Name)
+		if err := r.Delete(ctx, ingress); err != nil {
+			log.Error(err, "Failed to delete Ingress")
+			return ctrl.Result{}, err
+		}
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -120,6 +152,7 @@ func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudServic
 				return ctrl.Result{}, err
 			}
 		}
+
 		if len(cloudService.Spec.Volumes) != 0 {
 			statefulSet := NewStatefulSet(cloudService)
 			if err := r.Delete(ctx, statefulSet); err != nil && !errors.IsNotFound(err) {
@@ -131,6 +164,18 @@ func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudServic
 		configMap := NewConfigMap(cloudService)
 		if err := r.Delete(ctx, configMap); err != nil && !errors.IsNotFound(err) {
 			log.Error(err, "Failed to delete ConfigMap")
+			return ctrl.Result{}, err
+		}
+
+		service := NewService(cloudService)
+		if err := r.Delete(ctx, service); err != nil && !errors.IsNotFound(err) {
+			log.Error(err, "Failed to delete Service")
+			return ctrl.Result{}, err
+		}
+
+		ingress := NewIngress(cloudService)
+		if err := r.Delete(ctx, ingress); err != nil && !errors.IsNotFound(err) {
+			log.Error(err, "Failed to delete Ingress")
 			return ctrl.Result{}, err
 		}
 
@@ -147,6 +192,25 @@ func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudServic
 func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
+	configMap := NewConfigMap(cloudService)
+	if err := r.Get(ctx, req.NamespacedName, configMap); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("Creating ConfigMap", "name", configMap.Name)
+			if err := r.Create(ctx, configMap); err != nil {
+				log.Error(err, "Failed to create ConfigMap")
+				return ctrl.Result{}, err
+			}
+		} else {
+			return ctrl.Result{}, err
+		}
+	} else {
+		log.Info("Updating ConfigMap", "name", configMap.Name)
+		if err := r.Update(ctx, configMap); err != nil {
+			log.Error(err, "Failed to update ConfigMap")
+			return ctrl.Result{}, err
+		}
+	}
+
 	if len(cloudService.Spec.Volumes) == 0 {
 		deployment := NewDeployment(cloudService)
 		if err := r.Get(ctx, req.NamespacedName, deployment); err != nil {
@@ -157,14 +221,16 @@ func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudSe
 					log.Error(err, "Failed to create Deployment")
 					return ctrl.Result{}, err
 				}
+			} else {
+				return ctrl.Result{}, err
 			}
-			return ctrl.Result{}, nil
-		}
-		log.Info("Updating Deployment", "name", deployment.Name)
-		err := r.Update(ctx, deployment)
-		if err != nil {
-			log.Error(err, "Failed to update Deployment")
-			return ctrl.Result{}, err
+		} else {
+			log.Info("Updating Deployment", "name", deployment.Name)
+			err := r.Update(ctx, deployment)
+			if err != nil {
+				log.Error(err, "Failed to update Deployment")
+				return ctrl.Result{}, err
+			}
 		}
 	}
 
@@ -178,31 +244,54 @@ func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudSe
 					log.Error(err, "Failed to create StatefulSet")
 					return ctrl.Result{}, err
 				}
+			} else {
+				return ctrl.Result{}, nil
 			}
-			return ctrl.Result{}, nil
+
+		} else {
+			log.Info("Updating StatefulSet", "name", statefulSet.Name)
+			err := r.Update(ctx, statefulSet)
+			if err != nil {
+				log.Error(err, "Failed to update StatefulSet")
+				return ctrl.Result{}, err
+			}
 		}
-		log.Info("Updating StatefulSet", "name", statefulSet.Name)
-		err := r.Update(ctx, statefulSet)
-		if err != nil {
-			log.Error(err, "Failed to update StatefulSet")
+	}
+
+	service := NewService(cloudService)
+	if err := r.Get(ctx, req.NamespacedName, service); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("Creating Service", "name", service.Name)
+			if err := r.Create(ctx, service); err != nil {
+				log.Error(err, "Failed to create Service")
+				return ctrl.Result{}, err
+			}
+		} else {
+			return ctrl.Result{}, err
+		}
+	} else {
+		log.Info("Updating Service", "name", service.Name)
+		if err := r.Update(ctx, service); err != nil {
+			log.Error(err, "Failed to update Service")
 			return ctrl.Result{}, err
 		}
 	}
 
-	configMap := NewConfigMap(cloudService)
-	if err := r.Get(ctx, req.NamespacedName, configMap); err != nil {
+	ingress := NewIngress(cloudService)
+	if err := r.Get(ctx, req.NamespacedName, ingress); err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("Creating ConfigMap", "name", configMap.Name)
-			if err := r.Create(ctx, configMap); err != nil {
-				log.Error(err, "Failed to create ConfigMap")
+			log.Info("Creating Ingress", "name", ingress.Name)
+			if err := r.Create(ctx, ingress); err != nil {
+				log.Error(err, "Failed to create Ingress")
 				return ctrl.Result{}, err
 			}
+		} else {
+			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, err
 	} else {
-		log.Info("Updating ConfigMap", "name", configMap.Name)
-		if err := r.Update(ctx, configMap); err != nil {
-			log.Error(err, "Failed to update ConfigMap")
+		log.Info("Updating Ingress", "name", ingress.Name)
+		if err := r.Update(ctx, ingress); err != nil {
+			log.Error(err, "Failed to update Ingress")
 			return ctrl.Result{}, err
 		}
 	}

@@ -25,20 +25,20 @@ import (
 
 // CloudServiceSpec defines the desired state of CloudService.
 type CloudServiceSpec struct {
-	Id            int64    `json:"id,omitempty"`
-	Image         string   `json:"image,omitempty"`
-	Replicas      int32    `json:"replicas,omitempty"`
-	RequestCPU    int32    `json:"request_cpu,omitempty"`
-	LimitCPU      int32    `json:"limit_cpu,omitempty"`
-	RequestGPU    int32    `json:"request_gpu,omitempty"`
-	LimitGPU      int32    `json:"limit_gpu,omitempty"`
-	RequestMemory int32    `json:"request_memory,omitempty"`
-	LimitMemory   int32    `json:"limit_memory,omitempty"`
-	Volumes       []Volume `json:"volumes,omitempty"`
-	Ports         []Port   `json:"ports,omitempty"`
-	ConfigPath    string   `json:"config_path,omitempty"`
-	Config        string   `json:"config,omitempty"`
-	Log           string   `json:"log,omitempty"`
+	Id            int64             `json:"id,omitempty"`
+	Image         string            `json:"image,omitempty"`
+	Replicas      int32             `json:"replicas,omitempty"`
+	RequestCPU    int32             `json:"request_cpu,omitempty"`
+	LimitCPU      int32             `json:"limit_cpu,omitempty"`
+	RequestGPU    int32             `json:"request_gpu,omitempty"`
+	LimitGPU      int32             `json:"limit_gpu,omitempty"`
+	RequestMemory int32             `json:"request_memory,omitempty"`
+	LimitMemory   int32             `json:"limit_memory,omitempty"`
+	Volumes       []Volume          `json:"volumes,omitempty"`
+	Ports         []Port            `json:"ports,omitempty"`
+	ConfigPath    string            `json:"config_path,omitempty"`
+	Config        map[string]string `json:"config,omitempty"`
+	Log           string            `json:"log,omitempty"`
 }
 
 type Port struct {

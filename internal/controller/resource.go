@@ -12,17 +12,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+const MiB = 1024 * 1024 // 1 MiB = 2^20 字节
+
 func NewDeployment(cloudService *operatorv1alpha1.CloudService) *appv1.Deployment {
 	resourceList := corev1.ResourceList{
 		corev1.ResourceCPU:    *resource.NewQuantity(int64(cloudService.Spec.RequestCPU), resource.DecimalSI),
-		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.RequestMemory), resource.BinarySI),
+		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.RequestMemory)*MiB, resource.BinarySI),
 	}
 	if cloudService.Spec.RequestGPU > 0 {
 		resourceList[corev1.ResourceName("nvidia.com/gpu")] = *resource.NewQuantity(int64(cloudService.Spec.RequestGPU), resource.DecimalSI)
 	}
 	limits := corev1.ResourceList{
 		corev1.ResourceCPU:    *resource.NewQuantity(int64(cloudService.Spec.LimitCPU), resource.DecimalSI),
-		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.LimitMemory), resource.BinarySI),
+		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.LimitMemory)*MiB, resource.BinarySI),
 	}
 	if cloudService.Spec.LimitGPU > 0 {
 		limits[corev1.ResourceName("nvidia.com/gpu")] = *resource.NewQuantity(int64(cloudService.Spec.LimitGPU), resource.DecimalSI)
@@ -34,6 +36,11 @@ func NewDeployment(cloudService *operatorv1alpha1.CloudService) *appv1.Deploymen
 			ContainerPort: v.ContainerPort,
 			Protocol:      corev1.Protocol(v.Protocol),
 		})
+	}
+	var configfile string
+	for file := range cloudService.Spec.Config {
+		configfile = file
+		break
 	}
 	container := corev1.Container{
 		Name:  cloudService.Name,
@@ -47,6 +54,7 @@ func NewDeployment(cloudService *operatorv1alpha1.CloudService) *appv1.Deploymen
 			{
 				Name:      getServiceConfigVolume(cloudService.Name),
 				MountPath: cloudService.Spec.ConfigPath,
+				SubPath:   configfile,
 			},
 		},
 	}
@@ -71,6 +79,7 @@ func NewDeployment(cloudService *operatorv1alpha1.CloudService) *appv1.Deploymen
 			APIVersion: "apps/v1",
 		},
 		Spec: appv1.DeploymentSpec{
+			Replicas: &cloudService.Spec.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: cloudService.Labels,
 			},
@@ -90,14 +99,14 @@ func NewDeployment(cloudService *operatorv1alpha1.CloudService) *appv1.Deploymen
 func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.StatefulSet {
 	resourceList := corev1.ResourceList{
 		corev1.ResourceCPU:    *resource.NewQuantity(int64(cloudService.Spec.RequestCPU), resource.DecimalSI),
-		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.RequestMemory), resource.BinarySI),
+		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.RequestMemory)*MiB, resource.BinarySI),
 	}
 	if cloudService.Spec.RequestGPU > 0 {
 		resourceList[corev1.ResourceName("nvidia.com/gpu")] = *resource.NewQuantity(int64(cloudService.Spec.RequestGPU), resource.DecimalSI)
 	}
 	limits := corev1.ResourceList{
 		corev1.ResourceCPU:    *resource.NewQuantity(int64(cloudService.Spec.LimitCPU), resource.DecimalSI),
-		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.LimitMemory), resource.BinarySI),
+		corev1.ResourceMemory: *resource.NewQuantity(int64(cloudService.Spec.LimitMemory)*MiB, resource.BinarySI),
 	}
 	if cloudService.Spec.LimitGPU > 0 {
 		limits[corev1.ResourceName("nvidia.com/gpu")] = *resource.NewQuantity(int64(cloudService.Spec.LimitGPU), resource.DecimalSI)
@@ -113,9 +122,15 @@ func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.Stateful
 	}
 
 	volumeMounts := make([]corev1.VolumeMount, 0)
+	var configfile string
+	for file := range cloudService.Spec.Config {
+		configfile = file
+		break
+	}
 	volumeMounts = append(volumeMounts, corev1.VolumeMount{
 		Name:      getServiceConfigVolume(cloudService.Name),
 		MountPath: cloudService.Spec.ConfigPath,
+		SubPath:   configfile,
 	})
 	for _, v := range cloudService.Spec.Volumes {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
@@ -176,6 +191,7 @@ func NewStatefulSet(cloudService *operatorv1alpha1.CloudService) *appv1.Stateful
 			APIVersion: "apps/v1",
 		},
 		Spec: appv1.StatefulSetSpec{
+			Replicas: &cloudService.Spec.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: cloudService.Labels,
 			},
@@ -278,12 +294,10 @@ func NewConfigMap(cloudService *operatorv1alpha1.CloudService) *corev1.ConfigMap
 			Namespace: cloudService.Namespace,
 			Labels:    cloudService.Labels,
 		},
-		Data: map[string]string{
-			"config.yaml": cloudService.Spec.Config,
-		},
+		Data: cloudService.Spec.Config,
 	}
 }
 
 func getServiceConfigVolume(serviceName string) string {
-	return fmt.Sprintf("%s-config-volume", serviceName)
+	return fmt.Sprintf("%s-config", serviceName)
 }
