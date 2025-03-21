@@ -1,0 +1,94 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+spec:
+  endpointSelector:
+    matchLabels:
+      {{- range $key, $value := .Labels }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+  {{- if .Spec.IngressNetworkPolicy }}
+  ingress:
+    {{- range .Spec.IngressNetworkPolicy }}
+    {{- if .IpCIDR }}
+    - fromCIDRSet:
+        - cidr: {{ .IpCIDR }}
+      toPorts:
+        {{- range $.Spec.Ports }}
+        - ports:
+            - port: {{ .ContainerPort }}
+        {{- end }}
+    {{- end }}
+    {{- if .Namespace }}
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Namespace }}
+            {{- if .MatchLabels }}
+            {{- range $key, $value := .MatchLabels }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+            {{- end }}
+      toPorts:
+        {{- range $.Spec.Ports }}
+        - ports:
+            - port: {{ .ContainerPort }}
+        {{- end }}
+    {{- end }}
+    {{- if and .MatchLabels (not .Namespace) }}
+    - fromEndpoints:
+        - matchLabels:
+            {{- range $key, $value := .MatchLabels }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+      toPorts:
+        {{- range $.Spec.Ports }}
+        - ports:
+            - port: {{ .ContainerPort }}
+        {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Spec.EgressNetworkPolicy }}
+  egress:
+    {{- range .Spec.EgressNetworkPolicy }}
+    {{- if .IpCIDR }}
+    - toCIDRSet:
+        - cidr: {{ .IpCIDR }}
+    {{- end }}
+    {{- if .Namespace }}
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: {{ .Namespace }}
+            {{- if .MatchLabels }}
+            {{- range $key, $value := .MatchLabels }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+            {{- end }}
+    {{- end }}
+    {{- if and .MatchLabels (not .Namespace) }}
+    - toEndpoints:
+        - matchLabels:
+            {{- range $key, $value := .MatchLabels }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+    {{- end }}
+    {{- end }}
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchPattern: "*"
+  {{- end }}

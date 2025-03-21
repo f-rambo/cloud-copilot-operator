@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+data:
+  {{- range $key, $value := .Spec.Config }}
+  {{ $key }}: |
+    {{ $value }}
+  {{- end }}
+{{- if .Spec.CanaryDeployment.Image }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-canary
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+    version: canary
+data:
+  {{- range $key, $value := .Spec.Config }}
+  {{ $key }}: |
+    {{ $value }}
+  {{- end }}
+{{- end}}

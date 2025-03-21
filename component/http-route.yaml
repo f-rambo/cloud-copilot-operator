@@ -1,0 +1,31 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Spec.Gateway }}
+  rules:
+    {{- range .Spec.Ports }}
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ if .IngressPath }}{{ .IngressPath }}{{ else }}/{{ .Name }}{{ end }}
+      backendRefs:
+        - kind: Service
+          name: {{ $.Name }}
+          port: {{ .ContainerPort }}
+          {{- if $.Spec.CanaryDeployment.Image }}
+          weight: {{ minus 100 $.Spec.CanaryDeployment.TrafficPct }}
+        - kind: Service
+          name: {{ $.Name }}-canary
+          port: {{ .ContainerPort }}
+          weight: {{ $.Spec.CanaryDeployment.TrafficPct }}
+          {{- end }}
+    {{- end }}

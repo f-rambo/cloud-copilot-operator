@@ -39,17 +39,57 @@ spec:
           spec:
             description: CloudServiceSpec defines the desired state of CloudService.
             properties:
+              canary_deployment:
+                properties:
+                  config:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  image:
+                    type: string
+                  replicas:
+                    format: int32
+                    type: integer
+                  traffic_pct:
+                    format: int32
+                    type: integer
+                type: object
               config:
                 additionalProperties:
                   type: string
                 type: object
               config_path:
                 type: string
-              id:
-                format: int64
-                type: integer
+              egress_network_policy:
+                items:
+                  properties:
+                    ip_cidr:
+                      type: string
+                    match_labels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    namespace:
+                      type: string
+                  type: object
+                type: array
+              gateway:
+                type: string
               image:
                 type: string
+              ingress_network_policy:
+                items:
+                  properties:
+                    ip_cidr:
+                      type: string
+                    match_labels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    namespace:
+                      type: string
+                  type: object
+                type: array
               limit_cpu:
                 format: int32
                 type: integer
@@ -59,16 +99,11 @@ spec:
               limit_memory:
                 format: int32
                 type: integer
-              log:
-                type: string
               ports:
                 items:
                   properties:
                     container_port:
                       format: int32
-                      type: integer
-                    id:
-                      format: int64
                       type: integer
                     ingress_path:
                       type: string
@@ -76,9 +111,6 @@ spec:
                       type: string
                     protocol:
                       type: string
-                    service_id:
-                      format: int64
-                      type: integer
                   type: object
                 type: array
               replicas:
@@ -96,16 +128,10 @@ spec:
               volumes:
                 items:
                   properties:
-                    id:
-                      format: int64
-                      type: integer
                     name:
                       type: string
                     path:
                       type: string
-                    service_id:
-                      format: int64
-                      type: integer
                     storage:
                       format: int32
                       type: integer

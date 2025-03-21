@@ -12,7 +12,7 @@ spec:
   limit_cpu: 2
   request_memory: 1024
   limit_memory: 2048
-  config_path: "/etc/nginx/nginx.conf"
+  config_path: "/etc/nginx/"
   config:
     nginx.conf: |
       user  nginx;
@@ -57,8 +57,4 @@ spec:
     - ingress_path: "/"
       protocol: "TCP"
       container_port: 80
-  volumes:
-    - name: "nginx-storage"
-      path: "/usr/share/nginx/html"
-      storage: 1
-      storage_class: "standard"
+      name: "http"

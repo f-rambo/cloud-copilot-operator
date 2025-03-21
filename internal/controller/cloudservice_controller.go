@@ -21,11 +21,11 @@ import (
 	"slices"
 
 	cloudcopilotv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	netv1 "k8s.io/api/networking/v1"
+	"github.com/f-rambo/cloud-copilot/operator/component"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8sType "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -34,7 +34,8 @@ import (
 // CloudServiceReconciler reconciles a CloudService object
 type CloudServiceReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme           *runtime.Scheme
+	DynamicInterface dynamic.Interface
 }
 
 const FinalizerName = "finalizer.cloud-copilot.operator.io"
@@ -61,7 +62,6 @@ func (r *CloudServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		if errors.IsNotFound(err) {
 			// CR no longer exists, remove finalizer if it exists
 			log.Info("CloudService deleted, cleaning up resources", "namespace", req.Namespace, "name", req.Name)
-			return r.cleanupResources(ctx, req)
 		}
 		log.Error(err, "Failed to get CloudService")
 		return ctrl.Result{}, err
@@ -79,104 +79,63 @@ func (r *CloudServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Handle deletion
 	if cloudService.DeletionTimestamp != nil {
-		return r.handleDeletion(ctx, cloudService, req)
+		return r.handleDeletion(ctx, cloudService)
 	}
 
 	// Create or update resources
-	return r.reconcileResources(ctx, cloudService, req)
+	return r.reconcileResources(ctx, cloudService)
 }
 
-func (r *CloudServiceReconciler) cleanupResources(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-
-	// Deployment
-	deployment := &appsv1.Deployment{}
-	if err := r.Get(ctx, req.NamespacedName, deployment); err == nil {
-		log.Info("Deleting Deployment", "name", deployment.Name)
-		if err := r.Delete(ctx, deployment); err != nil {
-			log.Error(err, "Failed to delete Deployment")
-			return ctrl.Result{}, err
+	manifests, err := component.GetManifest(cloudService)
+	if err != nil {
+		log.Error(err, "Failed to get manifests")
+		return ctrl.Result{}, err
+	}
+	for _, item := range manifests.Items {
+		namespacedName := k8sType.NamespacedName{Namespace: item.GetNamespace(), Name: item.GetName()}
+		r.Get(ctx, namespacedName, nil)
+		if _, err := getResource(ctx, r.DynamicInterface, &item); err != nil {
+			if errors.IsNotFound(err) {
+				log.Info("Creating resource", "kind", item.GetKind(), "name", item.GetName())
+				err = createResource(ctx, r.DynamicInterface, &item)
+				if err != nil {
+					log.Error(err, "Failed to create resource")
+					return ctrl.Result{}, err
+				}
+			} else {
+				return ctrl.Result{}, err
+			}
+		} else {
+			log.Info("Updating resource", "kind", item.GetKind(), "name", item.GetName())
+			err = updateResource(ctx, r.DynamicInterface, &item)
+			if err != nil {
+				log.Error(err, "Failed to update resource")
+				return ctrl.Result{}, err
+			}
 		}
 	}
-
-	// StatefulSet
-	statefulSet := &appsv1.StatefulSet{}
-	if err := r.Get(ctx, req.NamespacedName, statefulSet); err == nil {
-		log.Info("Deleting StatefulSet", "name", statefulSet.Name)
-		if err := r.Delete(ctx, statefulSet); err != nil {
-			log.Error(err, "Failed to delete StatefulSet")
-			return ctrl.Result{}, err
-		}
-	}
-
-	// ConfigMap
-	configMap := &corev1.ConfigMap{}
-	if err := r.Get(ctx, req.NamespacedName, configMap); err == nil {
-		log.Info("Deleting ConfigMap", "name", configMap.Name)
-		if err := r.Delete(ctx, configMap); err != nil {
-			log.Error(err, "Failed to delete ConfigMap")
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Service
-	service := &corev1.Service{}
-	if err := r.Get(ctx, req.NamespacedName, service); err == nil {
-		log.Info("Deleting Service", "name", service.Name)
-		if err := r.Delete(ctx, service); err != nil {
-			log.Error(err, "Failed to delete Service")
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Ingress
-	ingress := &netv1.Ingress{}
-	if err := r.Get(ctx, req.NamespacedName, ingress); err == nil {
-		log.Info("Deleting Ingress", "name", ingress.Name)
-		if err := r.Delete(ctx, ingress); err != nil {
-			log.Error(err, "Failed to delete Ingress")
-			return ctrl.Result{}, err
-		}
-	}
-
 	return ctrl.Result{}, nil
 }
 
-func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService, _ ctrl.Request) (ctrl.Result, error) {
+func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	if slices.Contains(cloudService.Finalizers, FinalizerName) {
-		if len(cloudService.Spec.Volumes) == 0 {
-			deployment := NewDeployment(cloudService)
-			if err := r.Delete(ctx, deployment); err != nil && !errors.IsNotFound(err) {
-				log.Error(err, "Failed to delete Deployment")
-				return ctrl.Result{}, err
+
+		manifests, err := component.GetManifest(cloudService)
+		if err != nil {
+			log.Error(err, "Failed to get manifests")
+			return ctrl.Result{}, err
+		}
+		for _, item := range manifests.Items {
+			if _, err := getResource(ctx, r.DynamicInterface, &item); err == nil {
+				log.Info("Deleting resource", "kind", item.GetKind(), "name", item.GetName())
+				if err := deleteResource(ctx, r.DynamicInterface, &item); err != nil {
+					log.Error(err, "Failed to delete resource")
+					return ctrl.Result{}, err
+				}
 			}
-		}
-
-		if len(cloudService.Spec.Volumes) != 0 {
-			statefulSet := NewStatefulSet(cloudService)
-			if err := r.Delete(ctx, statefulSet); err != nil && !errors.IsNotFound(err) {
-				log.Error(err, "Failed to delete StatefulSet")
-				return ctrl.Result{}, err
-			}
-		}
-
-		configMap := NewConfigMap(cloudService)
-		if err := r.Delete(ctx, configMap); err != nil && !errors.IsNotFound(err) {
-			log.Error(err, "Failed to delete ConfigMap")
-			return ctrl.Result{}, err
-		}
-
-		service := NewService(cloudService)
-		if err := r.Delete(ctx, service); err != nil && !errors.IsNotFound(err) {
-			log.Error(err, "Failed to delete Service")
-			return ctrl.Result{}, err
-		}
-
-		ingress := NewIngress(cloudService)
-		if err := r.Delete(ctx, ingress); err != nil && !errors.IsNotFound(err) {
-			log.Error(err, "Failed to delete Ingress")
-			return ctrl.Result{}, err
 		}
 
 		// Remove Finalizer
@@ -187,126 +146,6 @@ func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudServic
 		}
 	}
 	return ctrl.Result{}, nil
-}
-
-func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-
-	configMap := NewConfigMap(cloudService)
-	if err := r.Get(ctx, req.NamespacedName, configMap); err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("Creating ConfigMap", "name", configMap.Name)
-			if err := r.Create(ctx, configMap); err != nil {
-				log.Error(err, "Failed to create ConfigMap")
-				return ctrl.Result{}, err
-			}
-		} else {
-			return ctrl.Result{}, err
-		}
-	} else {
-		log.Info("Updating ConfigMap", "name", configMap.Name)
-		if err := r.Update(ctx, configMap); err != nil {
-			log.Error(err, "Failed to update ConfigMap")
-			return ctrl.Result{}, err
-		}
-	}
-
-	if len(cloudService.Spec.Volumes) == 0 {
-		deployment := NewDeployment(cloudService)
-		if err := r.Get(ctx, req.NamespacedName, deployment); err != nil {
-			if errors.IsNotFound(err) {
-				log.Info("Creating Deployment", "name", deployment.Name)
-				err = r.Create(ctx, deployment)
-				if err != nil {
-					log.Error(err, "Failed to create Deployment")
-					return ctrl.Result{}, err
-				}
-			} else {
-				return ctrl.Result{}, err
-			}
-		} else {
-			log.Info("Updating Deployment", "name", deployment.Name)
-			err := r.Update(ctx, deployment)
-			if err != nil {
-				log.Error(err, "Failed to update Deployment")
-				return ctrl.Result{}, err
-			}
-		}
-	}
-
-	if len(cloudService.Spec.Volumes) != 0 {
-		statefulSet := NewStatefulSet(cloudService)
-		if err := r.Get(ctx, req.NamespacedName, statefulSet); err != nil {
-			if errors.IsNotFound(err) {
-				log.Info("Creating StatefulSet", "name", statefulSet.Name)
-				err = r.Create(ctx, statefulSet)
-				if err != nil {
-					log.Error(err, "Failed to create StatefulSet")
-					return ctrl.Result{}, err
-				}
-			} else {
-				return ctrl.Result{}, nil
-			}
-
-		} else {
-			log.Info("Updating StatefulSet", "name", statefulSet.Name)
-			err := r.Update(ctx, statefulSet)
-			if err != nil {
-				log.Error(err, "Failed to update StatefulSet")
-				return ctrl.Result{}, err
-			}
-		}
-	}
-
-	service := NewService(cloudService)
-	if err := r.Get(ctx, req.NamespacedName, service); err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("Creating Service", "name", service.Name)
-			if err := r.Create(ctx, service); err != nil {
-				log.Error(err, "Failed to create Service")
-				return ctrl.Result{}, err
-			}
-		} else {
-			return ctrl.Result{}, err
-		}
-	} else {
-		log.Info("Updating Service", "name", service.Name)
-		if err := r.Update(ctx, service); err != nil {
-			log.Error(err, "Failed to update Service")
-			return ctrl.Result{}, err
-		}
-	}
-
-	ingress := NewIngress(cloudService)
-	if err := r.Get(ctx, req.NamespacedName, ingress); err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("Creating Ingress", "name", ingress.Name)
-			if err := r.Create(ctx, ingress); err != nil {
-				log.Error(err, "Failed to create Ingress")
-				return ctrl.Result{}, err
-			}
-		} else {
-			return ctrl.Result{}, err
-		}
-	} else {
-		log.Info("Updating Ingress", "name", ingress.Name)
-		if err := r.Update(ctx, ingress); err != nil {
-			log.Error(err, "Failed to update Ingress")
-			return ctrl.Result{}, err
-		}
-	}
-
-	return ctrl.Result{}, nil
-}
-
-func removeString(slice []string, item string) []string {
-	var result []string
-	for _, s := range slice {
-		if s != item {
-			result = append(result, s)
-		}
-	}
-	return result
 }
 
 // SetupWithManager sets up the controller with the Manager.

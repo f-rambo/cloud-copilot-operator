@@ -1,0 +1,159 @@
+{{if gt (len .Spec.Volumes) 0}}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+spec:
+  replicas: {{ .Spec.Replicas }}
+  selector:
+    matchLabels:
+      {{- range $key, $value := .Labels }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+  serviceName: {{ .Name }}
+  template:
+    metadata:
+      name: {{ .Name }}
+      namespace: {{ .Namespace }}
+      labels:
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
+    spec:
+      containers:
+        - name: {{ .Name }}
+          image: {{ .Spec.Image }}
+          resources:
+            requests:
+              cpu: {{ .Spec.RequestCPU }}
+              memory: {{ .Spec.RequestMemory }}Mi
+              {{- if gt .Spec.RequestGPU 0 }}
+              nvidia.com/gpu: {{ .Spec.RequestGPU }}
+              {{- end }}
+            limits:
+              cpu: {{ .Spec.LimitCPU }}
+              memory: {{ .Spec.LimitMemory }}Mi
+              {{- if gt .Spec.LimitGPU 0 }}
+              nvidia.com/gpu: {{ .Spec.LimitGPU }}
+              {{- end }}
+          ports:
+            {{- range .Spec.Ports }}
+            - name: {{ .Name }}
+              containerPort: {{ .ContainerPort }}
+              protocol: {{ .Protocol }}
+            {{- end }}
+          volumeMounts:
+            {{- range $key, $value := .Spec.Config }}
+            - name: {{ $.Name }}
+              mountPath: {{ $.Spec.ConfigPath }}
+              subPath: {{ $key }}
+              readOnly: true
+            {{- end }}
+            {{- range .Spec.Volumes }}
+            - name: {{ .Name }}
+              mountPath: {{ .Path }}
+            {{- end }}
+      volumes:
+        - name: {{ .Name }}
+          configMap:
+            name: {{ .Name }}
+  volumeClaimTemplates:
+    {{- range .Spec.Volumes }}
+    - metadata:
+        name: {{ .Name }}
+      spec:
+        storageClassName: {{ .StorageClass }}
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Storage }}Gi
+    {{- end }}
+{{- if .Spec.CanaryDeployment.Image }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Name }}-canary
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+    version: canary
+spec:
+  replicas: {{ .Spec.CanaryDeployment.Replicas }}
+  selector:
+    matchLabels:
+      {{- range $key, $value := .Labels }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+      version: canary
+  serviceName: {{ .Name }}
+  template:
+    metadata:
+      name: {{ .Name }}
+      namespace: {{ .Namespace }}
+      labels:
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
+        version: canary
+    spec:
+      containers:
+        - name: {{ .Name }}
+          image: {{ .Spec.CanaryDeployment.Image }}
+          resources:
+            requests:
+              cpu: {{ .Spec.RequestCPU }}
+              memory: {{ .Spec.RequestMemory }}Mi
+              {{- if gt .Spec.RequestGPU 0 }}
+              nvidia.com/gpu: {{ .Spec.RequestGPU }}
+              {{- end }}
+            limits:
+              cpu: {{ .Spec.LimitCPU }}
+              memory: {{ .Spec.LimitMemory }}Mi
+              {{- if gt .Spec.LimitGPU 0 }}
+              nvidia.com/gpu: {{ .Spec.LimitGPU }}
+              {{- end }}
+          ports:
+            {{- range .Spec.Ports }}
+            - name: {{ .Name }}
+              containerPort: {{ .ContainerPort }}
+              protocol: {{ .Protocol }}
+            {{- end }}
+          volumeMounts:
+            {{- range $key, $value := .Spec.Config }}
+            - name: {{ $.Name }}-canary
+              mountPath: {{ $.Spec.ConfigPath }}
+              subPath: {{ $key }}
+              readOnly: true
+            {{- end }}
+            {{- range .Spec.Volumes }}
+            - name: {{ .Name }}-canary
+              mountPath: {{ .Path }}
+            {{- end }}
+      volumes:
+        - name: {{ .Name }}-canary
+          configMap:
+            name: {{ .Name }}-canary
+  volumeClaimTemplates:
+    {{- range .Spec.Volumes }}
+    - metadata:
+        name: {{ .Name }}-canary
+      spec:
+        storageClassName: {{ .StorageClass }}
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Storage }}Gi
+    {{- end }}
+{{- end }}
+{{- end}}

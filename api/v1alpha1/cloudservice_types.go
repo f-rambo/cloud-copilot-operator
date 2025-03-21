@@ -25,38 +25,49 @@ import (
 
 // CloudServiceSpec defines the desired state of CloudService.
 type CloudServiceSpec struct {
-	Id            int64             `json:"id,omitempty"`
-	Image         string            `json:"image,omitempty"`
-	Replicas      int32             `json:"replicas,omitempty"`
-	RequestCPU    int32             `json:"request_cpu,omitempty"`
-	LimitCPU      int32             `json:"limit_cpu,omitempty"`
-	RequestGPU    int32             `json:"request_gpu,omitempty"`
-	LimitGPU      int32             `json:"limit_gpu,omitempty"`
-	RequestMemory int32             `json:"request_memory,omitempty"`
-	LimitMemory   int32             `json:"limit_memory,omitempty"`
-	Volumes       []Volume          `json:"volumes,omitempty"`
-	Ports         []Port            `json:"ports,omitempty"`
-	ConfigPath    string            `json:"config_path,omitempty"`
-	Config        map[string]string `json:"config,omitempty"`
-	Log           string            `json:"log,omitempty"`
+	Gateway              string            `json:"gateway,omitempty"`
+	Image                string            `json:"image,omitempty"`
+	Replicas             int32             `json:"replicas,omitempty"`
+	RequestCPU           int32             `json:"request_cpu,omitempty"`
+	LimitCPU             int32             `json:"limit_cpu,omitempty"`
+	RequestGPU           int32             `json:"request_gpu,omitempty"`
+	LimitGPU             int32             `json:"limit_gpu,omitempty"`
+	RequestMemory        int32             `json:"request_memory,omitempty"`
+	LimitMemory          int32             `json:"limit_memory,omitempty"`
+	Volumes              []Volume          `json:"volumes,omitempty"`
+	Ports                []Port            `json:"ports,omitempty"`
+	ConfigPath           string            `json:"config_path,omitempty"` // dir
+	Config               map[string]string `json:"config,omitempty"`      // key: filename, value: content
+	IngressNetworkPolicy []NetworkPolicy   `json:"ingress_network_policy,omitempty"`
+	EgressNetworkPolicy  []NetworkPolicy   `json:"egress_network_policy,omitempty"`
+	CanaryDeployment     CanaryDeployment  `json:"canary_deployment,omitempty"`
 }
 
 type Port struct {
-	Id            int64  `json:"id,omitempty"`
 	Name          string `json:"name,omitempty"`
 	IngressPath   string `json:"ingress_path,omitempty"`
 	Protocol      string `json:"protocol,omitempty"`
 	ContainerPort int32  `json:"container_port,omitempty"`
-	ServiceId     int64  `json:"service_id,omitempty"`
 }
 
 type Volume struct {
-	Id           int64  `json:"id,omitempty"`
 	Name         string `json:"name,omitempty"`
 	Path         string `json:"path,omitempty"`
 	Storage      int32  `json:"storage,omitempty"`
 	StorageClass string `json:"storage_class,omitempty"`
-	ServiceId    int64  `json:"service_id,omitempty"`
+}
+
+type CanaryDeployment struct {
+	Image      string            `json:"image,omitempty"`
+	Replicas   int32             `json:"replicas,omitempty"`
+	Config     map[string]string `json:"config,omitempty"`
+	TrafficPct int32             `json:"traffic_pct,omitempty"`
+}
+
+type NetworkPolicy struct {
+	IpCIDR      string            `json:"ip_cidr,omitempty"`
+	Namespace   string            `json:"namespace,omitempty"`
+	MatchLabels map[string]string `json:"match_labels,omitempty"`
 }
 
 // CloudServiceStatus defines the observed state of CloudService.
