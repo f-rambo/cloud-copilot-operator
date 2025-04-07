@@ -1,0 +1,32 @@
+{{ if and .CloudServiceType (eq .CloudServiceType "GrpcServer") }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+spec:
+  parentRefs:
+    - name: {{ .Spec.Gateway }}
+  rules:
+    {{- range .Spec.Ports }}
+    - matches:
+      - method:
+          service: {{ $.Name }}
+      backendRefs:
+      - name: {{ $.Name }}
+        kind: Service
+        port: {{ .ContainerPort }}
+        {{- if $.Spec.CanaryDeployment.Image }}
+        weight: {{ minus 100 $.Spec.CanaryDeployment.TrafficPct }}
+      - kind: Service
+        name: {{ $.Name }}-canary
+        port: {{ .ContainerPort }}
+        weight: {{ $.Spec.CanaryDeployment.TrafficPct }}
+        {{- end }}
+    {{- end }}
+{{- end}}

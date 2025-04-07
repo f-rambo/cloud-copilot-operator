@@ -54,6 +54,8 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              cloud_service_type:
+                type: string
               config:
                 additionalProperties:
                   type: string

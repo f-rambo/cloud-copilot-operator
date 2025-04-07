@@ -1,0 +1,261 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: cloudclusters.cloud-copilot.operator.io
+spec:
+  group: cloud-copilot.operator.io
+  names:
+    kind: CloudCluster
+    listKind: CloudClusterList
+    plural: cloudclusters
+    singular: cloudcluster
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CloudCluster is the Schema for the cloudclusters API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              access_id:
+                type: string
+              access_key:
+                type: string
+              api_server_address:
+                type: string
+              api_server_port:
+                type: string
+              cilium_version:
+                type: string
+              cloud_resources:
+                items:
+                  properties:
+                    associated_id:
+                      type: string
+                    cluster_id:
+                      format: int64
+                      type: integer
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    ref_id:
+                      type: string
+                    tags:
+                      type: string
+                    type:
+                      format: int32
+                      type: integer
+                    value:
+                      type: string
+                  type: object
+                type: array
+              cluster_info:
+                type: string
+              config:
+                type: string
+              containerd_version:
+                type: string
+              domain:
+                type: string
+              id:
+                format: int64
+                type: integer
+              image_repo:
+                type: string
+              ingress_controller_rules:
+                items:
+                  properties:
+                    access:
+                      format: int32
+                      type: integer
+                    cluster_id:
+                      format: int64
+                      type: integer
+                    end_port:
+                      format: int32
+                      type: integer
+                    id:
+                      type: string
+                    ip_cidr:
+                      type: string
+                    name:
+                      type: string
+                    protocol:
+                      type: string
+                    start_port:
+                      format: int32
+                      type: integer
+                  type: object
+                type: array
+              kube_config_path:
+                type: string
+              kuberentes_version:
+                type: string
+              level:
+                format: int32
+                type: integer
+              name:
+                type: string
+              node_end_ip:
+                type: string
+              node_groups:
+                items:
+                  properties:
+                    arch:
+                      format: int32
+                      type: integer
+                    cluster_id:
+                      format: int64
+                      type: integer
+                    cpu:
+                      format: int32
+                      type: integer
+                    gpu:
+                      format: int32
+                      type: integer
+                    gpu_spec:
+                      format: int32
+                      type: integer
+                    id:
+                      type: string
+                    max_size:
+                      format: int32
+                      type: integer
+                    memory:
+                      format: int32
+                      type: integer
+                    min_size:
+                      format: int32
+                      type: integer
+                    name:
+                      type: string
+                    node_price:
+                      type: string
+                    os:
+                      type: string
+                    platform:
+                      type: string
+                    pod_ip_cidr:
+                      type: string
+                    pod_price:
+                      type: string
+                    subnet_ip_cidr:
+                      type: string
+                    target_size:
+                      format: int32
+                      type: integer
+                    type:
+                      format: int32
+                      type: integer
+                  type: object
+                type: array
+              node_start_ip:
+                type: string
+              nodes:
+                items:
+                  properties:
+                    backup_instance_ids:
+                      type: string
+                    cluster_id:
+                      format: int64
+                      type: integer
+                    data_disk_name:
+                      type: string
+                    data_disk_size:
+                      format: int32
+                      type: integer
+                    error_message:
+                      type: string
+                    error_type:
+                      format: int32
+                      type: integer
+                    id:
+                      format: int64
+                      type: integer
+                    image_id:
+                      type: string
+                    instance_id:
+                      type: string
+                    instance_type:
+                      type: string
+                    ip:
+                      type: string
+                    labels:
+                      type: string
+                    name:
+                      type: string
+                    node_group_id:
+                      type: string
+                    node_info:
+                      type: string
+                    role:
+                      format: int32
+                      type: integer
+                    status:
+                      format: int32
+                      type: integer
+                    system_disk_name:
+                      type: string
+                    system_disk_size:
+                      format: int32
+                      type: integer
+                    user:
+                      type: string
+                  type: object
+                type: array
+              pod_cidr:
+                type: string
+              private_key:
+                type: string
+              provider:
+                format: int32
+                type: integer
+              public_key:
+                type: string
+              region:
+                type: string
+              resrouce_path:
+                type: string
+              runc_version:
+                type: string
+              service_cidr:
+                type: string
+              status:
+                format: int32
+                type: integer
+              user_id:
+                format: int64
+                type: integer
+              vpc_cidr:
+                type: string
+            type: object
+          status:
+            format: int32
+            type: integer
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

@@ -7,7 +7,13 @@ rules:
 - apiGroups:
   - cloud-copilot.operator.io
   resources:
+  - cloudappreleases
+  - cloudapps
+  - cloudclusters
+  - cloudprojects
   - cloudservices
+  - cloudworkflows
+  - cloudworkspaces
   verbs:
   - create
   - delete
@@ -19,13 +25,25 @@ rules:
 - apiGroups:
   - cloud-copilot.operator.io
   resources:
+  - cloudappreleases/finalizers
+  - cloudapps/finalizers
+  - cloudclusters/finalizers
+  - cloudprojects/finalizers
   - cloudservices/finalizers
+  - cloudworkflows/finalizers
+  - cloudworkspaces/finalizers
   verbs:
   - update
 - apiGroups:
   - cloud-copilot.operator.io
   resources:
+  - cloudappreleases/status
+  - cloudapps/status
+  - cloudclusters/status
+  - cloudprojects/status
   - cloudservices/status
+  - cloudworkflows/status
+  - cloudworkspaces/status
   verbs:
   - get
   - patch

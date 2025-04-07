@@ -17,4 +17,58 @@ resources:
   kind: CloudService
   path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: cloud-copilot
+  kind: CloudApp
+  path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: cloud-copilot
+  kind: CloudProject
+  path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: cloud-copilot
+  kind: CloudCluster
+  path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: cloud-copilot
+  kind: CloudWorkspace
+  path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: cloud-copilot
+  kind: CloudAppRelease
+  path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: operator.io
+  group: cloud-copilot
+  kind: CloudWorkflow
+  path: github.com/f-rambo/cloud-copilot/operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

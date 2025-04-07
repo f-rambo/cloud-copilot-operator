@@ -1,4 +1,10 @@
 ## Append samples of your project ##
 resources:
 - cloud-copilot_v1alpha1_cloudservice.yaml
+- cloud-copilot_v1alpha1_cloudapp.yaml
+- cloud-copilot_v1alpha1_cloudproject.yaml
+- cloud-copilot_v1alpha1_cloudcluster.yaml
+- cloud-copilot_v1alpha1_cloudworkspace.yaml
+- cloud-copilot_v1alpha1_cloudapprelease.yaml
+- cloud-copilot_v1alpha1_cloudworkflow.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

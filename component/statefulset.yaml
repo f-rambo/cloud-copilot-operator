@@ -49,12 +49,9 @@ spec:
               protocol: {{ .Protocol }}
             {{- end }}
           volumeMounts:
-            {{- range $key, $value := .Spec.Config }}
-            - name: {{ $.Name }}
-              mountPath: {{ $.Spec.ConfigPath }}
-              subPath: {{ $key }}
+            - name: {{ .Name }}
+              mountPath: {{ .Spec.ConfigPath }}
               readOnly: true
-            {{- end }}
             {{- range .Spec.Volumes }}
             - name: {{ .Name }}
               mountPath: {{ .Path }}
@@ -129,12 +126,9 @@ spec:
               protocol: {{ .Protocol }}
             {{- end }}
           volumeMounts:
-            {{- range $key, $value := .Spec.Config }}
-            - name: {{ $.Name }}-canary
-              mountPath: {{ $.Spec.ConfigPath }}
-              subPath: {{ $key }}
+            - name: {{ .Name }}-canary
+              mountPath: {{ .Spec.ConfigPath }}
               readOnly: true
-            {{- end }}
             {{- range .Spec.Volumes }}
             - name: {{ .Name }}-canary
               mountPath: {{ .Path }}

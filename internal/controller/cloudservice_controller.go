@@ -20,8 +20,8 @@ import (
 	"context"
 	"slices"
 
-	cloudcopilotv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
-	"github.com/f-rambo/cloud-copilot/operator/component"
+	cloudServicev1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
+	"github.com/f-rambo/cloud-copilot/operator/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sType "k8s.io/apimachinery/pkg/types"
@@ -36,6 +36,7 @@ type CloudServiceReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
 	DynamicInterface dynamic.Interface
+	ComponentDir     string
 }
 
 const FinalizerName = "finalizer.cloud-copilot.operator.io"
@@ -56,15 +57,20 @@ const FinalizerName = "finalizer.cloud-copilot.operator.io"
 func (r *CloudServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	// Get CR
-	cloudService := &cloudcopilotv1alpha1.CloudService{}
+	cloudService := &cloudServicev1alpha1.CloudService{}
 	err := r.Get(ctx, req.NamespacedName, cloudService)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// CR no longer exists, remove finalizer if it exists
 			log.Info("CloudService deleted, cleaning up resources", "namespace", req.Namespace, "name", req.Name)
+			return ctrl.Result{}, nil
 		}
 		log.Error(err, "Failed to get CloudService")
 		return ctrl.Result{}, err
+	}
+
+	if cloudService.Spec.CloudServiceType != cloudServicev1alpha1.CloudServiceTypeGrpcServer && cloudService.Spec.CloudServiceType != cloudServicev1alpha1.CloudServiceTypeHttpServer {
+		cloudService.Spec.CloudServiceType = cloudServicev1alpha1.CloudServiceTypeHttpServer
 	}
 
 	// Add finalizer if it doesn't exist
@@ -86,9 +92,9 @@ func (r *CloudServiceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return r.reconcileResources(ctx, cloudService)
 }
 
-func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService) (ctrl.Result, error) {
+func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudService *cloudServicev1alpha1.CloudService) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	manifests, err := component.GetManifest(cloudService)
+	manifests, err := utils.GetCloudServiceManifest(r.ComponentDir, cloudService)
 	if err != nil {
 		log.Error(err, "Failed to get manifests")
 		return ctrl.Result{}, err
@@ -119,11 +125,11 @@ func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudSe
 	return ctrl.Result{}, nil
 }
 
-func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudService *cloudcopilotv1alpha1.CloudService) (ctrl.Result, error) {
+func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudService *cloudServicev1alpha1.CloudService) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	if slices.Contains(cloudService.Finalizers, FinalizerName) {
 
-		manifests, err := component.GetManifest(cloudService)
+		manifests, err := utils.GetCloudServiceManifest(r.ComponentDir, cloudService)
 		if err != nil {
 			log.Error(err, "Failed to get manifests")
 			return ctrl.Result{}, err
@@ -151,7 +157,7 @@ func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudServic
 // SetupWithManager sets up the controller with the Manager.
 func (r *CloudServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cloudcopilotv1alpha1.CloudService{}).
+		For(&cloudServicev1alpha1.CloudService{}).
 		Named("cloudservice").
 		Complete(r)
 }

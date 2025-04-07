@@ -10,6 +10,10 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
+const MiB = 1024 * 1024 // 1 MiB = 2^20 字节
+
+const GI = 1024 * 1024 * 1024 // 1 Gi = 2^30 字节
+
 func createResource(ctx context.Context, client dynamic.Interface, resource *unstructured.Unstructured) error {
 	gvk := resource.GroupVersionKind()
 	gvr := schema.GroupVersionResource{

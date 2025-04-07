@@ -1,3 +1,4 @@
+{{ if and .CloudServiceType (eq .CloudServiceType "GrpcServer") }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -29,3 +30,4 @@ spec:
           weight: {{ $.Spec.CanaryDeployment.TrafficPct }}
           {{- end }}
     {{- end }}
+{{- end}}

@@ -1,0 +1,154 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: cloudappreleases.cloud-copilot.operator.io
+spec:
+  group: cloud-copilot.operator.io
+  names:
+    kind: CloudAppRelease
+    listKind: CloudAppReleaseList
+    plural: cloudappreleases
+    singular: cloudapprelease
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CloudAppRelease is the Schema for the cloudappreleases API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              app_id:
+                format: int64
+                type: integer
+              app_name:
+                type: string
+              app_version:
+                type: string
+              atomic:
+                type: boolean
+              chart:
+                type: string
+              cluster_id:
+                format: int64
+                type: integer
+              config:
+                type: string
+              config_file:
+                type: string
+              cpu:
+                format: int32
+                type: integer
+              dryrun:
+                type: boolean
+              gpu:
+                format: int32
+                type: integer
+              id:
+                format: int64
+                type: integer
+              limit_cpu:
+                format: int32
+                type: integer
+              limit_gpu:
+                format: int32
+                type: integer
+              limit_memory:
+                format: int32
+                type: integer
+              logs:
+                type: string
+              memory:
+                format: int32
+                type: integer
+              namespace:
+                type: string
+              notes:
+                type: string
+              project_id:
+                format: int64
+                type: integer
+              release_name:
+                type: string
+              replicas:
+                format: int32
+                type: integer
+              repo_name:
+                type: string
+              resources:
+                items:
+                  properties:
+                    events:
+                      type: string
+                    id:
+                      type: string
+                    kind:
+                      type: string
+                    lables:
+                      type: string
+                    manifest:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    release_id:
+                      format: int64
+                      type: integer
+                    started_at:
+                      type: string
+                    status:
+                      format: int32
+                      type: integer
+                  type: object
+                type: array
+              status:
+                format: int32
+                type: integer
+              storage:
+                format: int32
+                type: integer
+              user_id:
+                format: int64
+                type: integer
+              version_id:
+                format: int64
+                type: integer
+              wait:
+                type: boolean
+              workspace_id:
+                format: int64
+                type: integer
+            type: object
+          status:
+            description: CloudAppReleaseStatus defines the observed state of CloudAppRelease.
+            properties:
+              status:
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

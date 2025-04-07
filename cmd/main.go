@@ -39,7 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	cloudcopilotv1alpha1 "github.com/f-rambo/cloud-copilot/operator/api/v1alpha1"
-	"github.com/f-rambo/cloud-copilot/operator/component"
 	"github.com/f-rambo/cloud-copilot/operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
@@ -58,6 +57,8 @@ func init() {
 
 // nolint:gocyclo
 func main() {
+	var appsDir string
+	var appConfigDir string
 	var componentDir string
 	var metricsAddr string
 	var metricsCertPath, metricsCertName, metricsCertKey string
@@ -67,6 +68,8 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var tlsOpts []func(*tls.Config)
+	flag.StringVar(&appsDir, "apps-dir", "apps", "The directory that contains the app manifests.")
+	flag.StringVar(&appConfigDir, "app-config-dir", "config/apps", "The directory that contains the app config manifests.")
 	flag.StringVar(&componentDir, "component-dir", "component", "The directory that contains the component manifests.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -91,8 +94,9 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	component.ComponentDir = componentDir
-
+	controller.AppPath = appsDir
+	controller.AppConfigDir = appConfigDir
+	controller.ComponentDir = componentDir
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
@@ -212,8 +216,51 @@ func main() {
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		DynamicInterface: dynamic.NewForConfigOrDie(mgr.GetConfig()),
+		ComponentDir:     componentDir,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CloudService")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudAppReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudApp")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudProjectReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudProject")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudClusterReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudCluster")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudWorkspaceReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudWorkspace")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudAppReleaseReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudAppRelease")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudWorkflowReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudWorkflow")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

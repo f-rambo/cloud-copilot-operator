@@ -22,6 +22,24 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the {{ .ProjectName }} itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- cloudworkflow_admin_role.yaml
+- cloudworkflow_editor_role.yaml
+- cloudworkflow_viewer_role.yaml
+- cloudapprelease_admin_role.yaml
+- cloudapprelease_editor_role.yaml
+- cloudapprelease_viewer_role.yaml
+- cloudworkspace_admin_role.yaml
+- cloudworkspace_editor_role.yaml
+- cloudworkspace_viewer_role.yaml
+- cloudcluster_admin_role.yaml
+- cloudcluster_editor_role.yaml
+- cloudcluster_viewer_role.yaml
+- cloudproject_admin_role.yaml
+- cloudproject_editor_role.yaml
+- cloudproject_viewer_role.yaml
+- cloudapp_admin_role.yaml
+- cloudapp_editor_role.yaml
+- cloudapp_viewer_role.yaml
 - cloudservice_admin_role.yaml
 - cloudservice_editor_role.yaml
 - cloudservice_viewer_role.yaml

@@ -3,6 +3,12 @@
 # It should be run by config/default
 resources:
 - bases/cloud-copilot.operator.io_cloudservices.yaml
+- bases/cloud-copilot.operator.io_cloudapps.yaml
+- bases/cloud-copilot.operator.io_cloudprojects.yaml
+- bases/cloud-copilot.operator.io_cloudclusters.yaml
+- bases/cloud-copilot.operator.io_cloudworkspaces.yaml
+- bases/cloud-copilot.operator.io_cloudappreleases.yaml
+- bases/cloud-copilot.operator.io_cloudworkflows.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

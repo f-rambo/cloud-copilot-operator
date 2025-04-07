@@ -1,0 +1,56 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Name }}-cert
+  namespace: {{ .Name }}
+spec:
+  secretName: {{ .Name }}-tls
+  isCA: true
+  commonName: {{ .Name }}-ca
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+    - "{{.Name }}.{{.Domain}}"
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Name }}-issuer
+  namespace: {{ .Name }}
+spec:
+  ca:
+    secretName: {{ .Name }}-tls
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ .Name }}
+  namespace: {{ .Name }}
+  annotations:
+    kubernetes.io/gateway.class: cilium
+    cert-manager.io/cluster-issuer: {{ .Name }}-issuer
+  labels:
+    app: {{.Name }}
+    gateway: cilium
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 443
+    hostname: {{.Name }}.{{.Domain}}
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: {{ .Name }}-tls
+        namespace: {{.Name}}
+    allowedRoutes:
+      kinds:
+      - kind: HTTPRoute

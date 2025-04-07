@@ -1,0 +1,158 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: cloudapps.cloud-copilot.operator.io
+spec:
+  group: cloud-copilot.operator.io
+  names:
+    kind: CloudApp
+    listKind: CloudAppList
+    plural: cloudapps
+    singular: cloudapp
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CloudApp is the Schema for the cloudapps API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              app:
+                properties:
+                  app_repo_id:
+                    format: int64
+                    type: integer
+                  app_type_id:
+                    format: int64
+                    type: integer
+                  description:
+                    type: string
+                  icon:
+                    type: string
+                  id:
+                    format: int64
+                    type: integer
+                  metadata:
+                    format: byte
+                    type: string
+                  name:
+                    type: string
+                  readme:
+                    type: string
+                  versions:
+                    items:
+                      properties:
+                        app_id:
+                          format: int64
+                          type: integer
+                        chart:
+                          type: string
+                        default_config:
+                          type: string
+                        id:
+                          format: int64
+                          type: integer
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              app_repo:
+                properties:
+                  apps:
+                    items:
+                      properties:
+                        app_repo_id:
+                          format: int64
+                          type: integer
+                        app_type_id:
+                          format: int64
+                          type: integer
+                        description:
+                          type: string
+                        icon:
+                          type: string
+                        id:
+                          format: int64
+                          type: integer
+                        metadata:
+                          format: byte
+                          type: string
+                        name:
+                          type: string
+                        readme:
+                          type: string
+                        versions:
+                          items:
+                            properties:
+                              app_id:
+                                format: int64
+                                type: integer
+                              chart:
+                                type: string
+                              default_config:
+                                type: string
+                              id:
+                                format: int64
+                                type: integer
+                              name:
+                                type: string
+                              version:
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                  description:
+                    type: string
+                  id:
+                    format: int64
+                    type: integer
+                  index_path:
+                    type: string
+                  name:
+                    type: string
+                  url:
+                    type: string
+                type: object
+            type: object
+          status:
+            description: CloudAppStatus defines the observed state of CloudApp.
+            properties:
+              last_update_time:
+                format: date-time
+                type: string
+              message:
+                type: string
+              status:
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

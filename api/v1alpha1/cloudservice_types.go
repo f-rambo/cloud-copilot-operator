@@ -23,8 +23,16 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type CloudServiceType string
+
+const (
+	CloudServiceTypeHttpServer CloudServiceType = "HttpServer"
+	CloudServiceTypeGrpcServer CloudServiceType = "GrpcServer"
+)
+
 // CloudServiceSpec defines the desired state of CloudService.
 type CloudServiceSpec struct {
+	CloudServiceType     CloudServiceType  `json:"cloud_service_type,omitempty"`
 	Gateway              string            `json:"gateway,omitempty"`
 	Image                string            `json:"image,omitempty"`
 	Replicas             int32             `json:"replicas,omitempty"`
@@ -60,7 +68,7 @@ type Volume struct {
 type CanaryDeployment struct {
 	Image      string            `json:"image,omitempty"`
 	Replicas   int32             `json:"replicas,omitempty"`
-	Config     map[string]string `json:"config,omitempty"`
+	Config     map[string]string `json:"config,omitempty"` // key: filename, value: content
 	TrafficPct int32             `json:"traffic_pct,omitempty"`
 }
 
