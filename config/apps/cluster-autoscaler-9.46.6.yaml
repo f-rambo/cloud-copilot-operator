@@ -14,23 +14,24 @@ autoDiscovery:
   # Enable autodiscovery for `cloudProvider=clusterapi`, for groups matching `autoDiscovery.labels`.
   # Enable autodiscovery for `cloudProvider=gce`, but no MIG tagging required.
   # Enable autodiscovery for `cloudProvider=magnum`, for groups matching `autoDiscovery.roles`.
-  clusterName:  # cluster.local
+  clusterName: # cluster.local
 
   # autoDiscovery.namespace -- Enable autodiscovery via cluster namespace for for `cloudProvider=clusterapi`
-  namespace:  # default
+  namespace: # default
 
   # autoDiscovery.tags -- ASG tags to match, run through `tpl`.
   tags:
     - k8s.io/cluster-autoscaler/enabled
-    - k8s.io/cluster-autoscaler/{{ .Values.autoDiscovery.clusterName }}
-  # - kubernetes.io/cluster/{{ .Values.autoDiscovery.clusterName }}
+    - k8s.io/cluster-autoscaler/{{ .Name }}
+    - kubernetes.io/cluster/{{ .Name }}
 
   # autoDiscovery.roles -- Magnum node group roles to match.
   roles:
     - worker
 
   # autoDiscovery.labels -- Cluster-API labels to match  https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/clusterapi/README.md#configuring-node-group-auto-discovery
-  labels: []
+  labels:
+    []
     # - color: green
     # - shape: circle
 # autoscalingGroups -- For AWS, Azure AKS, Exoscale or Magnum. At least one element is required if not using `autoDiscovery`. For example:
@@ -73,7 +74,7 @@ autoscalingGroupsnamePrefix: []
 awsAccessKeyID: ""
 
 # awsRegion -- AWS region (required if `cloudProvider=aws`)
-awsRegion: us-east-1
+awsRegion: ""
 
 # awsSecretAccessKey -- AWS access secret key ([if AWS user keys used](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md#using-aws-credentials))
 awsSecretAccessKey: ""
@@ -153,13 +154,14 @@ clusterAPIKubeconfigSecret: ""
 # Syntax: workloadClusterMode-ManagementClusterMode
 # for `kubeconfig-kubeconfig`, `incluster-kubeconfig` and `single-kubeconfig` you always must mount the external kubeconfig using either `extraVolumeSecrets` or `extraMounts` and `extraVolumes`
 # if you dont set `clusterAPIKubeconfigSecret`and thus use an in-cluster config or want to use a non capi generated kubeconfig you must do so for the workload kubeconfig as well
-clusterAPIMode: incluster-incluster  # incluster-incluster, incluster-kubeconfig, kubeconfig-incluster, kubeconfig-kubeconfig, single-kubeconfig
+clusterAPIMode: incluster-incluster # incluster-incluster, incluster-kubeconfig, kubeconfig-incluster, kubeconfig-kubeconfig, single-kubeconfig
 
 # clusterAPIWorkloadKubeconfigPath -- Path to kubeconfig for connecting to Cluster API managed workloadcluster, only used if `clusterAPIMode=kubeconfig-kubeconfig or kubeconfig-incluster`
 clusterAPIWorkloadKubeconfigPath: /etc/kubernetes/value
 
 # containerSecurityContext -- [Security context for container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
-containerSecurityContext: {}
+containerSecurityContext:
+  {}
   # allowPrivilegeEscalation: false
   # capabilities:
   #   drop:
@@ -250,19 +252,22 @@ extraObjects: []
 #    description: "This priority class should be used for XYZ service pods only."
 
 # extraVolumeMounts -- Additional volumes to mount.
-extraVolumeMounts: []
+extraVolumeMounts:
+  []
   # - name: ssl-certs
   #   mountPath: /etc/ssl/certs/ca-certificates.crt
   #   readOnly: true
 
 # extraVolumes -- Additional volumes.
-extraVolumes: []
+extraVolumes:
+  []
   # - name: ssl-certs
   #   hostPath:
   #     path: /etc/ssl/certs/ca-bundle.crt
 
 # extraVolumeSecrets -- Additional volumes to mount from Secrets.
-extraVolumeSecrets: {}
+extraVolumeSecrets:
+  {}
   # autoscaler-vol:
   #   mountPath: /data/autoscaler/
   # custom-vol:
@@ -330,7 +335,8 @@ podLabels: {}
 priorityClassName: "system-cluster-critical"
 
 # priorityConfigMapAnnotations -- Annotations to add to `cluster-autoscaler-priority-expander` ConfigMap.
-priorityConfigMapAnnotations: {}
+priorityConfigMapAnnotations:
+  {}
   # key1: "value1"
   # key2: "value2"
 
@@ -371,7 +377,8 @@ rbac:
 replicaCount: 1
 
 # resources -- Pod resource requests and limits.
-resources: {}
+resources:
+  {}
   # limits:
   #   cpu: 100m
   #   memory: 300Mi
@@ -383,7 +390,8 @@ resources: {}
 revisionHistoryLimit: 10
 
 # securityContext -- [Security context for pod](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
-securityContext: {}
+securityContext:
+  {}
   # runAsNonRoot: true
   # runAsUser: 65534
   # runAsGroup: 65534
@@ -442,7 +450,8 @@ serviceMonitor:
 tolerations: []
 
 # topologySpreadConstraints -- You can use topology spread constraints to control how Pods are spread across your cluster among failure-domains such as regions, zones, nodes, and other user-defined topology domains. (requires Kubernetes >= 1.19).
-topologySpreadConstraints: []
+topologySpreadConstraints:
+  []
   # - maxSkew: 1
   #   topologyKey: topology.kubernetes.io/zone
   #   whenUnsatisfiable: DoNotSchedule
@@ -451,7 +460,8 @@ topologySpreadConstraints: []
   #       app.kubernetes.io/instance: cluster-autoscaler
 
 # updateStrategy -- [Deployment update strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)
-updateStrategy: {}
+updateStrategy:
+  {}
   # rollingUpdate:
   #   maxSurge: 1
   #   maxUnavailable: 0
@@ -468,4 +478,3 @@ vpa:
 
 # secretKeyRefNameOverride -- Overrides the name of the Secret to use when loading the secretKeyRef for AWS, Azure and Civo env variables
 secretKeyRefNameOverride: ""
-
