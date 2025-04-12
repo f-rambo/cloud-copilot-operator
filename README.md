@@ -1,18 +1,26 @@
 # operator
-// TODO(user): Add simple overview of use/purpose
+
+Operator is the kubernetes operator of the Cloud Copilot project
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+
+Managing clusters, services, and applications
 
 ## Getting Started
 
+```sh
+make build && make install
+```
+
 ### Prerequisites
+
 - go version v1.23.0+
 - docker version 17.03+.
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
 
 ### To Deploy on the cluster
+
 **Build and push your image to the location specified by `IMG`:**
 
 ```sh
@@ -36,7 +44,7 @@ make deploy IMG=<some-registry>/operator:tag
 ```
 
 > **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+> privileges or be logged in as admin.
 
 **Create instances of your solution**
 You can apply the samples (examples) from the config/sample:
@@ -45,9 +53,10 @@ You can apply the samples (examples) from the config/sample:
 kubectl apply -k config/samples/
 ```
 
->**NOTE**: Ensure that the samples has default values to test it out.
+> **NOTE**: Ensure that the samples has default values to test it out.
 
 ### To Uninstall
+
 **Delete the instances (CRs) from the cluster:**
 
 ```sh
@@ -101,7 +110,7 @@ kubebuilder edit --plugins=helm/v1-alpha
 ```
 
 2. See that a chart was generated under 'dist/chart', and users
-can obtain this solution from there.
+   can obtain this solution from there.
 
 **NOTE:** If you change the project, you need to update the Helm Chart
 using the same command above to sync the latest changes. Furthermore,
@@ -111,6 +120,7 @@ previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml
 is manually re-applied afterwards.
 
 ## Contributing
+
 // TODO(user): Add detailed information on how you would like others to contribute to this project
 
 **NOTE:** Run `make help` for more information on all potential `make` targets
@@ -132,4 +142,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
