@@ -47,11 +47,11 @@ prometheus:
 
   # the service account used by prometheus
   # required when " .Values.prometheus.rbacPrometheus == true " and " .Values.prometheus.podMonitor.enabled=true or prometheus.serviceMonitor.enabled=true "
-  serviceAccount: ""
+  serviceAccount: "prometheus"
 
   # the namespace where prometheus is deployed
   # required when " .Values.prometheus.rbacPrometheus == true " and " .Values.prometheus.podMonitor.enabled=true or prometheus.serviceMonitor.enabled=true "
-  namespace: ""
+  namespace: "monitoring"
 
   # the image to be used for the kuberbacproxy container
   rbacProxy:

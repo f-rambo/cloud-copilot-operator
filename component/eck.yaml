@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elasticsearch-sa
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: elasticsearch-role
+rules:
+  - apiGroups: [""]
+    resources:
+      [
+        "pods",
+        "services",
+        "endpoints",
+        "persistentvolumeclaims",
+        "events",
+        "configmaps",
+        "secrets",
+      ]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+    verbs: ["*"]
+  - apiGroups: ["elasticsearch.k8s.elastic.co"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: elasticsearch-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: elasticsearch-sa
+    namespace: monitoring
+roleRef:
+  kind: ClusterRole
+  name: elasticsearch-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+  namespace: monitoring
+spec:
+  version: 8.18.0
+  nodeSets:
+    - name: eck-cluster
+      count: 3
+      config:
+        node.store.allow_mmap: false
+        node.roles: ["master", "data", "ingest"]
+      podTemplate:
+        spec:
+          serviceAccountName: elasticsearch-sa
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  memory: 2Gi
+                  cpu: 0.5
+                limits:
+                  memory: 2Gi
+                  cpu: 1
+          # volumes:
+          #   - name: elasticsearch-data
+          #     emptyDir: {}
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 50Gi
+            storageClassName: standard
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat-sa
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: filebeat-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["beat.k8s.elastic.co"]
+    resources: ["beats"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: filebeat-sa
+    namespace: monitoring
+roleRef:
+  kind: ClusterRole
+  name: filebeat-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: beat.k8s.elastic.co/v1beta1
+kind: Beat
+metadata:
+  name: filebeat
+  namespace: monitoring
+spec:
+  type: filebeat
+  version: 8.18.0
+  config:
+    filebeat:
+      inputs:
+        - type: cilium-hubble
+          paths:
+            - /var/run/cilium/hubble/*.log
+        - type: container
+          paths:
+            - /var/log/containers/*.log
+        - type: service
+          paths:
+            - /var/log/service/**/*.log
+          fields_under_root: true
+          processors:
+            - add_fields:
+                target: ""
+                fields:
+                  service_name: "${PATH_2}"
+    processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+            - logs_path:
+                logs_path: "/var/run/cilium/hubble/"
+            - logs_path:
+                logs_path: "/var/log/containers/"
+            - logs_path:
+                logs_path: "/var/log/service/"
+    output.kafka:
+      hosts: ["kafka.toolkit.svc:9092"]
+      topic: "logs"
+      codec.json:
+        pretty: false
+  daemonSet:
+    podTemplate:
+      spec:
+        serviceAccountName: filebeat-sa
+        automountServiceAccountToken: true
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+        containers:
+          - name: filebeat
+            securityContext:
+              runAsUser: 0
+              privileged: false
+            volumeMounts:
+              - name: cilium-hubble-logs
+                mountPath: /var/run/cilium/hubble
+              - name: container-logs
+                mountPath: /var/log/containers
+              - name: service-logs
+                mountPath: /var/log/service
+        volumes:
+          - name: cilium-hubble-logs
+            hostPath:
+              path: /var/run/cilium/hubble
+          - name: container-logs
+            hostPath:
+              path: /var/log/containers
+          - name: service-logs
+            hostPath:
+              path: /var/log/service

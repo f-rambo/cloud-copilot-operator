@@ -24,7 +24,6 @@ import (
 	"github.com/f-rambo/cloud-copilot/operator/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8sType "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,9 +99,8 @@ func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudSe
 		return ctrl.Result{}, err
 	}
 	for _, item := range manifests.Items {
-		namespacedName := k8sType.NamespacedName{Namespace: item.GetNamespace(), Name: item.GetName()}
-		r.Get(ctx, namespacedName, nil)
-		if _, err := getResource(ctx, r.DynamicInterface, &item); err != nil {
+		resource, err := getResource(ctx, r.DynamicInterface, item)
+		if err != nil {
 			if errors.IsNotFound(err) {
 				log.Info("Creating resource", "kind", item.GetKind(), "name", item.GetName())
 				err = createResource(ctx, r.DynamicInterface, &item)
@@ -110,16 +108,16 @@ func (r *CloudServiceReconciler) reconcileResources(ctx context.Context, cloudSe
 					log.Error(err, "Failed to create resource")
 					return ctrl.Result{}, err
 				}
-			} else {
-				return ctrl.Result{}, err
+				continue
 			}
-		} else {
-			log.Info("Updating resource", "kind", item.GetKind(), "name", item.GetName())
-			err = updateResource(ctx, r.DynamicInterface, &item)
-			if err != nil {
-				log.Error(err, "Failed to update resource")
-				return ctrl.Result{}, err
-			}
+			return ctrl.Result{}, err
+		}
+		log.Info("Updating resource", "kind", item.GetKind(), "name", item.GetName())
+		item.SetResourceVersion(resource.GetResourceVersion())
+		err = updateResource(ctx, r.DynamicInterface, &item)
+		if err != nil {
+			log.Error(err, "Failed to update resource")
+			return ctrl.Result{}, err
 		}
 	}
 	return ctrl.Result{}, nil
@@ -135,7 +133,7 @@ func (r *CloudServiceReconciler) handleDeletion(ctx context.Context, cloudServic
 			return ctrl.Result{}, err
 		}
 		for _, item := range manifests.Items {
-			if _, err := getResource(ctx, r.DynamicInterface, &item); err == nil {
+			if _, err := getResource(ctx, r.DynamicInterface, item); err == nil {
 				log.Info("Deleting resource", "kind", item.GetKind(), "name", item.GetName())
 				if err := deleteResource(ctx, r.DynamicInterface, &item); err != nil {
 					log.Error(err, "Failed to delete resource")

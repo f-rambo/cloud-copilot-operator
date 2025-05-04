@@ -44,10 +44,6 @@ spec:
                 type: string
               api_server_address:
                 type: string
-              api_server_port:
-                type: string
-              cilium_version:
-                type: string
               cloud_resources:
                 items:
                   properties:
@@ -71,47 +67,16 @@ spec:
                       type: string
                   type: object
                 type: array
-              cluster_info:
-                type: string
               config:
-                type: string
-              containerd_version:
                 type: string
               domain:
                 type: string
               id:
                 format: int64
                 type: integer
-              image_repo:
+              image_repository:
                 type: string
-              ingress_controller_rules:
-                items:
-                  properties:
-                    access:
-                      format: int32
-                      type: integer
-                    cluster_id:
-                      format: int64
-                      type: integer
-                    end_port:
-                      format: int32
-                      type: integer
-                    id:
-                      type: string
-                    ip_cidr:
-                      type: string
-                    name:
-                      type: string
-                    protocol:
-                      type: string
-                    start_port:
-                      format: int32
-                      type: integer
-                  type: object
-                type: array
-              kube_config_path:
-                type: string
-              kuberentes_version:
+              kubernetes_version:
                 type: string
               level:
                 format: int32
@@ -151,17 +116,7 @@ spec:
                       type: integer
                     name:
                       type: string
-                    node_price:
-                      type: string
                     os:
-                      type: string
-                    platform:
-                      type: string
-                    pod_ip_cidr:
-                      type: string
-                    pod_price:
-                      type: string
-                    subnet_ip_cidr:
                       type: string
                     target_size:
                       format: int32
@@ -173,6 +128,8 @@ spec:
                 type: array
               node_start_ip:
                 type: string
+              node_username:
+                type: string
               nodes:
                 items:
                   properties:
@@ -181,11 +138,26 @@ spec:
                     cluster_id:
                       format: int64
                       type: integer
-                    data_disk_name:
-                      type: string
-                    data_disk_size:
-                      format: int32
-                      type: integer
+                    disks:
+                      items:
+                        properties:
+                          cluster_id:
+                            format: int64
+                            type: integer
+                          device:
+                            type: string
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          node_id:
+                            format: int64
+                            type: integer
+                          size:
+                            format: int32
+                            type: integer
+                        type: object
+                      type: array
                     error_message:
                       type: string
                     error_type:
@@ -216,12 +188,7 @@ spec:
                     status:
                       format: int32
                       type: integer
-                    system_disk_name:
-                      type: string
-                    system_disk_size:
-                      format: int32
-                      type: integer
-                    user:
+                    username:
                       type: string
                   type: object
                 type: array
@@ -236,15 +203,38 @@ spec:
                 type: string
               region:
                 type: string
-              resrouce_path:
-                type: string
-              runc_version:
-                type: string
+              securitys:
+                items:
+                  properties:
+                    access:
+                      format: int32
+                      type: integer
+                    cluster_id:
+                      format: int64
+                      type: integer
+                    end_port:
+                      format: int32
+                      type: integer
+                    id:
+                      type: string
+                    ip_cidr:
+                      type: string
+                    name:
+                      type: string
+                    protocol:
+                      type: string
+                    start_port:
+                      format: int32
+                      type: integer
+                  type: object
+                type: array
               service_cidr:
                 type: string
               status:
                 format: int32
                 type: integer
+              subnet_cidrs:
+                type: string
               user_id:
                 format: int64
                 type: integer

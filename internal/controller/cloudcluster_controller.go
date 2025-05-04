@@ -30,13 +30,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8sType "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	pkgLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // CloudClusterReconciler reconciles a CloudCluster object
@@ -60,64 +60,81 @@ type CloudClusterReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.2/pkg/reconcile
 func (r *CloudClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := pkgLog.FromContext(ctx)
 	cloudcluster := &cloudcopilotv1alpha1.CloudCluster{}
 	err := r.Get(ctx, req.NamespacedName, cloudcluster)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			uninstallOrder := cloudcopilotv1alpha1.GetUninstallOrder()
-			for _, item := range uninstallOrder {
-				if cloudcopilotv1alpha1.IsAppName(item) {
-					err = r.uninstallApp(ctx, item.(cloudcopilotv1alpha1.AppName))
-					if err != nil {
-						return ctrl.Result{}, err
-					}
-				}
-				if cloudcopilotv1alpha1.IsAppCrd(item) {
-					err = r.uninstallCrd(ctx, item.(cloudcopilotv1alpha1.AppCrd), &cloudcluster.Spec)
-					if err != nil {
-						return ctrl.Result{}, err
-					}
-				}
-				return ctrl.Result{}, nil
-			}
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
 	}
-	installItems := cloudcopilotv1alpha1.GetInstallOrder()
-	for _, item := range installItems {
-		if cloudcopilotv1alpha1.IsAppName(item) {
-			err = r.installApp(ctx, item.(cloudcopilotv1alpha1.AppName), &cloudcluster.Spec)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-		if cloudcopilotv1alpha1.IsAppCrd(item) {
-			err = r.installCrd(ctx, item.(cloudcopilotv1alpha1.AppCrd), &cloudcluster.Spec)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-		return ctrl.Result{}, nil
-	}
-
 	err = r.HandlerNodes(ctx, &cloudcluster.Spec)
 	if err != nil {
+		log.Error(err, "handler nodes failed")
+		return ctrl.Result{}, err
+	}
+	err = r.HandlerClusterApp(ctx, &cloudcluster.Spec)
+	if err != nil {
+		log.Error(err, "handler cluster app failed")
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }
 
-// instlal app
-func (r *CloudClusterReconciler) installApp(ctx context.Context, appName cloudcopilotv1alpha1.AppName, cluster *cloudcopilotv1alpha1.Cluster) error {
-	appRelease := &cloudcopilotv1alpha1.AppRelease{
+func (r *CloudClusterReconciler) HandlerClusterApp(ctx context.Context, cluster *cloudcopilotv1alpha1.Cluster) error {
+	log := pkgLog.FromContext(ctx)
+	if cluster.Status >= cloudcopilotv1alpha1.ClusterStatus_STOPPING {
+		uninstallOrder := cloudcopilotv1alpha1.GetUninstallOrder()
+		for _, item := range uninstallOrder {
+			if cloudcopilotv1alpha1.IsAppName(item) {
+				err := r.uninstallApp(ctx, item.(cloudcopilotv1alpha1.AppName))
+				if err != nil {
+					return err
+				}
+			}
+			if cloudcopilotv1alpha1.IsAppCrd(item) {
+				err := r.uninstallCrd(ctx, item.(cloudcopilotv1alpha1.AppCrd), cluster)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	if cluster.Status == cloudcopilotv1alpha1.ClusterStatus_STARTING {
+		installItems := cloudcopilotv1alpha1.GetInstallOrder()
+		for _, item := range installItems {
+			if cloudcopilotv1alpha1.IsAppName(item) {
+				appName := item.(cloudcopilotv1alpha1.AppName)
+				if appName == cloudcopilotv1alpha1.RookCeph && len(cluster.GetHaveDiskNodes()) == 0 {
+					log.Info("Skip install RookCeph app")
+					continue
+				}
+				err := r.applyApp(ctx, appName, cluster)
+				if err != nil {
+					return err
+				}
+			}
+			if cloudcopilotv1alpha1.IsAppCrd(item) {
+				err := r.installCrd(ctx, item.(cloudcopilotv1alpha1.AppCrd), cluster)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	return nil
+}
+
+func (r *CloudClusterReconciler) applyApp(ctx context.Context, appName cloudcopilotv1alpha1.AppName, cluster *cloudcopilotv1alpha1.Cluster) error {
+	appRelease := cloudcopilotv1alpha1.AppRelease{
 		ReleaseName: appName.String(),
 		AppName:     appName.String(),
 		Namespace:   cloudcopilotv1alpha1.GetAppNs(appName),
-		Wait:        true,
 	}
-	err := GetAppReleaseStatus(ctx, appRelease)
+	err := GetAppReleaseStatus(ctx, &appRelease)
 	if err != nil {
 		return err
 	}
@@ -138,8 +155,30 @@ func (r *CloudClusterReconciler) installApp(ctx context.Context, appName cloudco
 	}
 	appRelease.Chart = appPath
 	appRelease.ConfigFile = tempConfigPath
-	err = AppRelease(ctx, appRelease)
+	cloudAppRelease := &cloudcopilotv1alpha1.CloudAppRelease{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CloudAppRelease",
+			APIVersion: cloudcopilotv1alpha1.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appRelease.ReleaseName,
+			Namespace: cloudcopilotv1alpha1.GetAppNs(appName),
+		},
+		Spec: appRelease,
+	}
+	objKey := types.NamespacedName{
+		Name:      appRelease.ReleaseName,
+		Namespace: cloudcopilotv1alpha1.GetAppNs(appName),
+	}
+	err = r.Get(ctx, objKey, cloudAppRelease)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			err = r.Create(ctx, cloudAppRelease)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -175,22 +214,21 @@ func (r *CloudClusterReconciler) installCrd(ctx context.Context, crdName cloudco
 		return err
 	}
 	for _, item := range unstructuredList.Items {
-		namespacedName := k8sType.NamespacedName{Namespace: item.GetNamespace(), Name: item.GetName()}
-		r.Get(ctx, namespacedName, nil)
-		if _, err := getResource(ctx, r.DynamicInterface, &item); err != nil {
+		resource, err := getResource(ctx, r.DynamicInterface, item)
+		if err != nil {
 			if errors.IsNotFound(err) {
 				err = createResource(ctx, r.DynamicInterface, &item)
 				if err != nil {
 					return err
 				}
-			} else {
-				return err
+				continue
 			}
-		} else {
-			err = updateResource(ctx, r.DynamicInterface, &item)
-			if err != nil {
-				return err
-			}
+			return err
+		}
+		item.SetResourceVersion(resource.GetResourceVersion())
+		err = updateResource(ctx, r.DynamicInterface, &item)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -211,19 +249,16 @@ func (r *CloudClusterReconciler) uninstallCrd(ctx context.Context, crdName cloud
 		return err
 	}
 	for _, item := range unstructuredList.Items {
-		namespacedName := k8sType.NamespacedName{Namespace: item.GetNamespace(), Name: item.GetName()}
-		r.Get(ctx, namespacedName, nil)
-		if _, err := getResource(ctx, r.DynamicInterface, &item); err != nil {
+		_, err = getResource(ctx, r.DynamicInterface, item)
+		if err != nil {
 			if errors.IsNotFound(err) {
-				return nil
-			} else {
-				return err
+				continue
 			}
-		} else {
-			err = deleteResource(ctx, r.DynamicInterface, &item)
-			if err != nil {
-				return err
-			}
+			return err
+		}
+		err = deleteResource(ctx, r.DynamicInterface, &item)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -280,6 +315,24 @@ func (r *CloudClusterReconciler) getNodes(ctx context.Context, clientSet *kubern
 				n = v
 				clusterNodeIndex = index
 				break
+			}
+		}
+		if n.Role == cloudcopilotv1alpha1.NodeRole_MASTER {
+			if _, ok := node.Labels["node-role.kubernetes.io/control-plane"]; !ok {
+				node.Labels["node-role.kubernetes.io/control-plane"] = ""
+				_, err = clientSet.CoreV1().Nodes().Update(ctx, &node, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if n.Role == cloudcopilotv1alpha1.NodeRole_WORKER {
+			if _, ok := node.Labels["node-role.kubernetes.io/worker"]; !ok {
+				node.Labels["node-role.kubernetes.io/worker"] = ""
+				_, err = clientSet.CoreV1().Nodes().Update(ctx, &node, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
 			}
 		}
 		for _, v := range node.Status.Addresses {

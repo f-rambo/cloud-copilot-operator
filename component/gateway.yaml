@@ -33,13 +33,13 @@ metadata:
   name: {{ .Name }}
   namespace: {{ .Name }}
   annotations:
-    kubernetes.io/gateway.class: cilium
-    cert-manager.io/cluster-issuer: {{ .Name }}-issuer
+    kubernetes.io/gateway.class: {{.GatewayClass}}
+    cert-manager.io/cluster-issuer: {{.Name}}-issuer
   labels:
-    app: {{.Name }}
-    gateway: cilium
+    app: {{.Name}}
+    gateway: {{.GatewayClass}}
 spec:
-  gatewayClassName: cilium
+  gatewayClassName: {{.GatewayClass}}
   listeners:
   - name: https
     protocol: HTTPS

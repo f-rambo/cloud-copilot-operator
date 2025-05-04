@@ -36,7 +36,7 @@ func deleteResource(ctx context.Context, client dynamic.Interface, resource *uns
 	return err
 }
 
-func getResource(ctx context.Context, client dynamic.Interface, resource *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func getResource(ctx context.Context, client dynamic.Interface, resource unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	gvk := resource.GroupVersionKind()
 	gvr := schema.GroupVersionResource{
 		Group:    gvk.Group,

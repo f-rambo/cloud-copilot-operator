@@ -57,11 +57,10 @@ var (
 	CertManager         AppName = "cert-manager"
 	ArgoWorkflows       AppName = "argo-workflows"
 	KubePrometheusStack AppName = "kube-prometheus-stack"
+	EckOperator         AppName = "eck-operator"
 
 	ClusterAutoscaler AppName = "cluster-autoscaler"
-
-	OpenTelemetryCollector AppName = "opentelemetry-collector"
-	JaegerOperator         AppName = "jaeger-operator"
+	Kafka             AppName = "kafka"
 
 	// app crd
 	GatewayCrd    AppCrd = "gateway-crd"
@@ -74,27 +73,26 @@ var (
 	appNsMap = map[ClusterNamespace][]AppName{
 		ClusterNamespace_networking: {Metallb, Cilium},
 		ClusterNamespace_storage:    {RookCeph},
-		ClusterNamespace_monitoring: {KubePrometheusStack, OpenTelemetryCollector, JaegerOperator, ClusterAutoscaler},
-		ClusterNamespace_toolkit:    {CertManager, ArgoWorkflows},
+		ClusterNamespace_monitoring: {EckOperator, KubePrometheusStack},
+		ClusterNamespace_toolkit:    {CertManager, ArgoWorkflows, Kafka, ClusterAutoscaler},
 	}
 )
 
 func GetInstallOrder() []any {
 	return []any{
-		GatewayCrd,
+		Cilium,
 		CertManager,
 		ClusterIssuer,
+		GatewayCrd,
 		Metallb,
 		IpAddressPool,
-		Cilium,
 		RookCeph,
+		EckOperator,
 		KubePrometheusStack,
 		CertManager,
 		Metallb,
 		Cilium,
 		RookCeph,
-		OpenTelemetryCollector,
-		JaegerOperator,
 		ArgoWorkflows,
 		ClusterAutoscaler,
 	}
@@ -106,8 +104,7 @@ func GetUninstallOrder() []any {
 		Metallb, Cilium,
 		ArgoWorkflows,
 		ClusterAutoscaler,
-		OpenTelemetryCollector,
-		JaegerOperator,
+		EckOperator,
 		KubePrometheusStack,
 		RookCeph,
 	}

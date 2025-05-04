@@ -25,3 +25,6 @@ go.work
 *.swp
 *.swo
 *~
+
+example/
+*_test.go

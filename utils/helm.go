@@ -264,6 +264,7 @@ func (h *HelmPkg) RunInstall(ctx context.Context, client *action.Install, chart 
 		if getErr != nil {
 			return nil, getErr
 		}
+		upgrade.ReuseValues = true
 		upgrade.Version = client.Version
 		upgrade.ChartPathOptions = client.ChartPathOptions
 		upgrade.Force = client.Force

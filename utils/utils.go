@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,20 +119,24 @@ func TransferredMeaning(data any, fileDetailPath string) (tmpFile string, err er
 }
 
 func ParseYAML(filename string) (*unstructured.UnstructuredList, error) {
-	data, err := os.ReadFile(filename)
+	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
+
+	decoder := yaml.NewYAMLOrJSONDecoder(file, 4096)
 	list := &unstructured.UnstructuredList{Items: make([]unstructured.Unstructured, 0)}
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
 	for {
 		var obj map[string]any
-		err = decoder.Decode(&obj)
-		if err != nil {
-			if err.Error() == "EOF" {
+		if err := decoder.Decode(&obj); err != nil {
+			if err == io.EOF {
 				break
 			}
-			return nil, err
+			continue
+		}
+		if len(obj) == 0 {
+			continue
 		}
 		list.Items = append(list.Items, unstructured.Unstructured{Object: obj})
 	}
