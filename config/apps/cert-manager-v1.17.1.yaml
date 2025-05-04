@@ -308,12 +308,16 @@ extraEnv: []
 # Resources to provide to the cert-manager controller pod.
 #
 # For example:
-#  requests:
-#    cpu: 10m
-#    memory: 32Mi
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
 #
 # For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
-resources: {}
+# resources: {}
 
 # Pod Security Context.
 # For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
@@ -486,8 +490,8 @@ topologySpreadConstraints: []
 # +docs:property
 livenessProbe:
   enabled: true
-  initialDelaySeconds: 10
-  periodSeconds: 10
+  initialDelaySeconds: 60
+  periodSeconds: 20
   timeoutSeconds: 15
   successThreshold: 1
   failureThreshold: 8
