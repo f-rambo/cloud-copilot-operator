@@ -1861,8 +1861,8 @@ hubble:
       allowList: 
         - '{"verdict":["DROPPED","ERROR","FORWARDED"]}'
       denyList:
-        - '{"source_pod":["kube-system/","toolkit/","cloudcopilot/","networking/","storage/","monitoring/"]}'
-        - '{"destination_pod":["kube-system/,"toolkit/","cloudcopilot/","networking/","storage/","monitoring/"]}'
+        - '{"source_pod": ["kube-system/","toolkit/","cloudcopilot/","networking/","storage/","monitoring/"]}'
+        - '{"destination_pod": ["kube-system/","toolkit/","cloudcopilot/","networking/","storage/","monitoring/"]}'
         - '{"source_label":["reserved:kube-apiserver","reserved:health","reserved:host","reserved:remote-node","reserved:unknown"]}'
         - '{"destination_label":["reserved:kube-apiserver","reserved:health","reserved:host","reserved:remote-node","reserved:unknown"]}'
     # --- Dynamic exporters configuration.
