@@ -71,6 +71,12 @@ spec:
                 type: string
               domain:
                 type: string
+              extended_parameters:
+                additionalProperties:
+                  type: string
+                type: object
+              gateway_class:
+                type: string
               id:
                 format: int64
                 type: integer
@@ -233,6 +239,8 @@ spec:
               status:
                 format: int32
                 type: integer
+              storage_class:
+                type: string
               subnet_cidrs:
                 type: string
               user_id:

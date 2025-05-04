@@ -445,35 +445,36 @@ func (c *Cluster) GetHaveDiskNodes() []*Node {
 }
 
 type Cluster struct {
-	Id                int64            `gorm:"column:id;primaryKey;AUTO_INCREMENT" json:"id,omitempty"`
-	Name              string           `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
-	ApiServerAddress  string           `gorm:"column:api_server_address;default:'';NOT NULL" json:"api_server_address,omitempty"`
-	KubernetesVersion string           `gorm:"column:kubernetes_version;default:'';NOT NULL" json:"kubernetes_version,omitempty"`
-	ImageRepository   string           `gorm:"column:image_repository;default:'';NOT NULL" json:"image_repository,omitempty"`
-	Config            string           `gorm:"column:config;default:'';NOT NULL" json:"config,omitempty"`
-	Status            ClusterStatus    `gorm:"column:status;default:0;NOT NULL" json:"status,omitempty"`
-	Provider          ClusterProvider  `gorm:"column:provider;default:0;NOT NULL" json:"provider,omitempty"`
-	Level             ClusterLevel     `gorm:"column:level;default:0;NOT NULL" json:"level,omitempty"`
-	PublicKey         string           `gorm:"column:public_key;default:'';NOT NULL" json:"public_key,omitempty"`
-	PrivateKey        string           `gorm:"column:private_key;default:'';NOT NULL" json:"private_key,omitempty"`
-	Region            string           `gorm:"column:region;default:'';NOT NULL" json:"region,omitempty"`
-	UserId            int64            `gorm:"column:user_id;default:0;NOT NULL" json:"user_id,omitempty"` // action user
-	AccessId          string           `gorm:"column:access_id;default:'';NOT NULL" json:"access_id,omitempty"`
-	AccessKey         string           `gorm:"column:access_key;default:'';NOT NULL" json:"access_key,omitempty"`
-	NodeUsername      string           `gorm:"column:node_username;default:'';NOT NULL" json:"node_username,omitempty"`
-	NodeStartIp       string           `gorm:"column:node_start_ip;default:'';NOT NULL" json:"node_start_ip,omitempty"`
-	NodeEndIp         string           `gorm:"column:node_end_ip;default:'';NOT NULL" json:"node_end_ip,omitempty"`
-	Domain            string           `gorm:"column:domain;default:'';NOT NULL" json:"domain,omitempty"`
-	VpcCidr           string           `gorm:"column:vpc_cidr;default:'';NOT NULL" json:"vpc_cidr,omitempty"`
-	ServiceCidr       string           `gorm:"column:service_cidr;default:'';NOT NULL" json:"service_cidr,omitempty"`
-	PodCidr           string           `gorm:"column:pod_cidr;default:'';NOT NULL" json:"pod_cidr,omitempty"`
-	SubnetCidrs       string           `gorm:"column:subnet_cidrs;default:'';NOT NULL" json:"subnet_cidrs,omitempty"` // 多个子网cidr，逗号分隔
-	GatewayClass      string           `gorm:"column:gateway_class;default:'';NOT NULL" json:"gateway_class,omitempty"`
-	StorageClass      string           `gorm:"column:storage_class;default:'';NOT NULL" json:"storage_class,omitempty"`
-	NodeGroups        []*NodeGroup     `gorm:"-" json:"node_groups,omitempty"`
-	Nodes             []*Node          `gorm:"-" json:"nodes,omitempty"`
-	CloudResources    []*CloudResource `gorm:"-" json:"cloud_resources,omitempty"`
-	Securitys         []*Security      `gorm:"-" json:"securitys,omitempty"`
+	Id                 int64             `gorm:"column:id;primaryKey;AUTO_INCREMENT" json:"id,omitempty"`
+	Name               string            `gorm:"column:name;default:'';NOT NULL" json:"name,omitempty"`
+	ApiServerAddress   string            `gorm:"column:api_server_address;default:'';NOT NULL" json:"api_server_address,omitempty"`
+	KubernetesVersion  string            `gorm:"column:kubernetes_version;default:'';NOT NULL" json:"kubernetes_version,omitempty"`
+	ImageRepository    string            `gorm:"column:image_repository;default:'';NOT NULL" json:"image_repository,omitempty"`
+	Config             string            `gorm:"column:config;default:'';NOT NULL" json:"config,omitempty"`
+	Status             ClusterStatus     `gorm:"column:status;default:0;NOT NULL" json:"status,omitempty"`
+	Provider           ClusterProvider   `gorm:"column:provider;default:0;NOT NULL" json:"provider,omitempty"`
+	Level              ClusterLevel      `gorm:"column:level;default:0;NOT NULL" json:"level,omitempty"`
+	PublicKey          string            `gorm:"column:public_key;default:'';NOT NULL" json:"public_key,omitempty"`
+	PrivateKey         string            `gorm:"column:private_key;default:'';NOT NULL" json:"private_key,omitempty"`
+	Region             string            `gorm:"column:region;default:'';NOT NULL" json:"region,omitempty"`
+	UserId             int64             `gorm:"column:user_id;default:0;NOT NULL" json:"user_id,omitempty"` // action user
+	AccessId           string            `gorm:"column:access_id;default:'';NOT NULL" json:"access_id,omitempty"`
+	AccessKey          string            `gorm:"column:access_key;default:'';NOT NULL" json:"access_key,omitempty"`
+	NodeUsername       string            `gorm:"column:node_username;default:'';NOT NULL" json:"node_username,omitempty"`
+	NodeStartIp        string            `gorm:"column:node_start_ip;default:'';NOT NULL" json:"node_start_ip,omitempty"`
+	NodeEndIp          string            `gorm:"column:node_end_ip;default:'';NOT NULL" json:"node_end_ip,omitempty"`
+	Domain             string            `gorm:"column:domain;default:'';NOT NULL" json:"domain,omitempty"`
+	VpcCidr            string            `gorm:"column:vpc_cidr;default:'';NOT NULL" json:"vpc_cidr,omitempty"`
+	ServiceCidr        string            `gorm:"column:service_cidr;default:'';NOT NULL" json:"service_cidr,omitempty"`
+	PodCidr            string            `gorm:"column:pod_cidr;default:'';NOT NULL" json:"pod_cidr,omitempty"`
+	SubnetCidrs        string            `gorm:"column:subnet_cidrs;default:'';NOT NULL" json:"subnet_cidrs,omitempty"` // 多个子网cidr，逗号分隔
+	GatewayClass       string            `gorm:"column:gateway_class;default:'';NOT NULL" json:"gateway_class,omitempty"`
+	StorageClass       string            `gorm:"column:storage_class;default:'';NOT NULL" json:"storage_class,omitempty"`
+	NodeGroups         []*NodeGroup      `gorm:"-" json:"node_groups,omitempty"`
+	Nodes              []*Node           `gorm:"-" json:"nodes,omitempty"`
+	CloudResources     []*CloudResource  `gorm:"-" json:"cloud_resources,omitempty"`
+	Securitys          []*Security       `gorm:"-" json:"securitys,omitempty"`
+	ExtendedParameters map[string]string `gorm:"-" json:"extended_parameters,omitempty"` // 自定义扩展参数
 }
 
 type NodeGroup struct {

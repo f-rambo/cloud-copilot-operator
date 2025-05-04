@@ -122,21 +122,25 @@ spec:
   config:
     filebeat:
       inputs:
-        - type: cilium-hubble
+        - type: log
           paths:
             - /var/run/cilium/hubble/*.log
-        - type: container
-          paths:
-            - /var/log/containers/*.log
-        - type: service
+          ignore_older: 72h
+          close_inactive: 24h
+          close_removed: false
+        - type: log
           paths:
             - /var/log/service/**/*.log
           fields_under_root: true
-          processors:
-            - add_fields:
-                target: ""
-                fields:
-                  service_name: "${PATH_2}"
+          ignore_older: 72h
+          close_inactive: 24h
+          close_removed: false
+        - type: container
+          paths:
+            - /var/log/pods/**/*.log
+          ignore_older: 72h
+          close_inactive: 24h
+          close_removed: false
     processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
@@ -144,11 +148,11 @@ spec:
             - logs_path:
                 logs_path: "/var/run/cilium/hubble/"
             - logs_path:
-                logs_path: "/var/log/containers/"
+                logs_path: "/var/log/pods/"
             - logs_path:
                 logs_path: "/var/log/service/"
     output.kafka:
-      hosts: ["kafka.toolkit.svc:9092"]
+      hosts: ["kafka.toolkit.svc.cluster.local:9092"]
       topic: "logs"
       codec.json:
         pretty: false
@@ -168,17 +172,17 @@ spec:
             volumeMounts:
               - name: cilium-hubble-logs
                 mountPath: /var/run/cilium/hubble
-              - name: container-logs
-                mountPath: /var/log/containers
+              - name: pod-logs
+                mountPath: /var/log/pods
               - name: service-logs
                 mountPath: /var/log/service
         volumes:
           - name: cilium-hubble-logs
             hostPath:
               path: /var/run/cilium/hubble
-          - name: container-logs
+          - name: pod-logs
             hostPath:
-              path: /var/log/containers
+              path: /var/log/pods
           - name: service-logs
             hostPath:
               path: /var/log/service
