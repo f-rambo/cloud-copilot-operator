@@ -54,36 +54,37 @@ type AppReleaseResource struct {
 }
 
 type AppRelease struct {
-	Id          int64                 `json:"id,omitempty"`
-	AppVersion  string                `json:"app_version,omitempty"`
-	AppName     string                `json:"app_name,omitempty"`
-	ReleaseName string                `json:"release_name,omitempty"`
-	Namespace   string                `json:"namespace,omitempty"`
-	Config      string                `json:"config,omitempty"`
-	ConfigFile  string                `json:"config_file,omitempty"`
-	Status      AppReleaseSatus       `json:"status,omitempty"`
-	Notes       string                `json:"notes,omitempty"`
-	Logs        string                `json:"logs,omitempty"`
-	Dryrun      bool                  `json:"dryrun,omitempty"`
-	Atomic      bool                  `json:"atomic,omitempty"`
-	Wait        bool                  `json:"wait,omitempty"`
-	Replicas    int32                 `json:"replicas,omitempty"`
-	Cpu         int32                 `json:"cpu,omitempty"`
-	LimitCpu    int32                 `json:"limit_cpu,omitempty"`
-	Memory      int32                 `json:"memory,omitempty"`
-	LimitMemory int32                 `json:"limit_memory,omitempty"`
-	Gpu         int32                 `json:"gpu,omitempty"`
-	LimitGpu    int32                 `json:"limit_gpu,omitempty"`
-	Storage     int32                 `json:"storage,omitempty"`
-	Resources   []*AppReleaseResource `json:"resources,omitempty"`
-	Chart       string                `json:"chart,omitempty"`
-	RepoName    string                `json:"repo_name,omitempty"`
-	AppId       int64                 `json:"app_id,omitempty"`
-	VersionId   int64                 `json:"version_id,omitempty"`
-	ClusterId   int64                 `json:"cluster_id,omitempty"`
-	ProjectId   int64                 `json:"project_id,omitempty"`
-	UserId      int64                 `json:"user_id,omitempty"`
-	WorkspaceId int64                 `json:"workspace_id,omitempty"`
+	Id                 int64                 `json:"id,omitempty"`
+	AppVersion         string                `json:"app_version,omitempty"`
+	AppName            string                `json:"app_name,omitempty"`
+	ReleaseName        string                `json:"release_name,omitempty"`
+	Namespace          string                `json:"namespace,omitempty"`
+	Config             string                `json:"config,omitempty"`
+	ConfigFile         string                `json:"config_file,omitempty"`
+	Status             AppReleaseSatus       `json:"status,omitempty"`
+	Notes              string                `json:"notes,omitempty"`
+	Logs               string                `json:"logs,omitempty"`
+	Dryrun             bool                  `json:"dryrun,omitempty"`
+	Atomic             bool                  `json:"atomic,omitempty"`
+	Wait               bool                  `json:"wait,omitempty"`
+	Replicas           int32                 `json:"replicas,omitempty"`
+	Cpu                int32                 `json:"cpu,omitempty"`
+	LimitCpu           int32                 `json:"limit_cpu,omitempty"`
+	Memory             int32                 `json:"memory,omitempty"`
+	LimitMemory        int32                 `json:"limit_memory,omitempty"`
+	Gpu                int32                 `json:"gpu,omitempty"`
+	LimitGpu           int32                 `json:"limit_gpu,omitempty"`
+	Storage            int32                 `json:"storage,omitempty"`
+	Resources          []*AppReleaseResource `json:"resources,omitempty"`
+	Chart              string                `json:"chart,omitempty"`
+	RepoName           string                `json:"repo_name,omitempty"`
+	AppId              int64                 `json:"app_id,omitempty"`
+	VersionId          int64                 `json:"version_id,omitempty"`
+	ClusterId          int64                 `json:"cluster_id,omitempty"`
+	ProjectId          int64                 `json:"project_id,omitempty"`
+	UserId             int64                 `json:"user_id,omitempty"`
+	WorkspaceId        int64                 `json:"workspace_id,omitempty"`
+	ExtendedParameters map[string]string     `json:"extended_parameters,omitempty"` // 自定义扩展参数
 }
 
 // CloudAppReleaseStatus defines the observed state of CloudAppRelease.

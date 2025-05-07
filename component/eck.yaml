@@ -61,10 +61,10 @@ spec:
             - name: elasticsearch
               resources:
                 requests:
-                  memory: 2Gi
-                  cpu: 0.5
+                  memory: 500Mi
+                  cpu: 500m
                 limits:
-                  memory: 2Gi
+                  memory: 1Gi
                   cpu: 1
           # volumes:
           #   - name: elasticsearch-data
@@ -169,6 +169,13 @@ spec:
             securityContext:
               runAsUser: 0
               privileged: false
+            resources:
+              requests:
+                memory: "200Mi"
+                cpu: "100m"
+              limits:
+                memory: "500Mi"
+                cpu: "500m"
             volumeMounts:
               - name: cilium-hubble-logs
                 mountPath: /var/run/cilium/hubble
