@@ -5034,14 +5034,16 @@ thanosRuler:
     ## Storage is the definition of how storage will be used by the ThanosRuler instances.
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/platform/storage.md
     ##
+    # storage:
+    #   volumeClaimTemplate:
+    #     spec:
+    #       storageClassName: "{{.StorageClass}}"
+    #       accessModes: ["ReadWriteOnce"]
+    #       resources:
+    #         requests:
+    #           storage: 10Gi
     storage:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: "{{.StorageClass}}"
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 10Gi
+      emptyDir: {}
     #   selector: {}
 
     ## AlertmanagerConfig define configuration for connecting to alertmanager.
